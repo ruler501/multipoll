@@ -23,11 +23,12 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
+DEBUG_PROPAGATE_EXCEPTIONS = DEBUG
 
-ALLOWED_HOSTS = ["simplepoll.rocks"]
+ALLOWED_HOSTS = ["ph-simple-poll.herokuapp.com"]
 
-
+1
 # Application definition
 
 INSTALLED_APPS = (
@@ -112,7 +113,9 @@ STATICFILES_STORAGE = 'whitenoise.django.GzipManifestStaticFilesStorage'
 
 # Parse database configuration from $DATABASE_URL
 import dj_database_url
-DATABASES['default'] = dj_database_url.config()
+config = dj_database_url.config()
+if config:
+    DATABASES['default'] = config
 
 # Honor the 'X-Forwarded-Proto' header for request.is_secure()
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')

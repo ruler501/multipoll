@@ -21,5 +21,6 @@ urlpatterns = [
     url(r'^$', views.index, name="index"),
     url(r'^oauthcallback/', views.oauthcallback, name="oauthcallback"),
     url(r'^poll/', views.poll, name="poll"),
+    url(r'^vote/', views.vote, name="vote"),
     url(r'^privacy-policy/', views.privacy_policy, name="privacy-policy"),
 ]
