@@ -4,6 +4,7 @@ import requests
 from main.models import Teams, Polls, Votes
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
+from collections import defaultdict
 from datetime import datetime
 import string
 import random
@@ -39,6 +40,15 @@ def update_vote(poll, user, content):
 def get_all_votes(poll):
     return Votes.objects.filter(poll=poll)
 
+def parse_message(message):
+    options = []
+    for opt in message['attachments'][0]['actions']:
+        options.append(opt['text'])
+    
+    question = message['text'].split('*')[1]
+    
+    return question, options, defaultdict(list)
+    
 def index(request):
     state = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(36))
     context = {"state": state}
@@ -113,13 +123,19 @@ def format_text(question, options, votes):
     text = ""
     text = "*" + question + "*\n\n"
     for option in range(0, len(options)):
-        toAdd = ":" + numbers[option] + ": " + options[option] + "\n"
+        toAdd = ":" + numbers[option] + ": " + options[option]
+        toAdd += ', '.join(votes[options[option]])
         # Add count + condorcet score here
         text += unicode(toAdd)
-    for vote in votes:
-        print 'vote', vote
-        text += unicode(vote.content)
     return text
+
+def format_attachments(question, options):
+    for option in options:
+        attach = { "name": "option", "text": option, "type": "button", "value": option }
+        actions.append(attach)
+    attachments = [{ "text": "Options", "callback_id": "options", "attachment_type": "default", "actions": actions }]
+    
+    return json.dumps(attachments)
     
 @csrf_exempt
 def interactive_button(request):
@@ -128,7 +144,17 @@ def interactive_button(request):
         return errorcode
     payload = json.loads(request.POST['payload'])
     print payload.items()
-    return HttpResponse()
+    question, options, votes = parse_message(payload['original_method'])
+    votes[payload["actions"]["value"]].append(payload["user"]["name"])
+    text = format_text(question, options, votes)
+    attachments = format_attachments(question, options)
+    postMessage_params = {
+        "token": "xoxp-295024425040-295165594001-427015731286-44189cac96fe454bbfe6d1daabb584a1",
+        "text": text,
+        "icon_url": "https://simplepoll.rocks/static/main/simplepolllogo-colors.png",
+        "attachments": attach_string
+    }
+    return HttpResponse(json.dumps(postMessage))
 
 @csrf_exempt
 def poll(request):
@@ -153,16 +179,12 @@ def poll(request):
     print 'options', options
 
     def sendPollMessage():
-        text = format_text(question, options, votes=[])
+        text = format_text(question, options, votes=defaultdict(list))
         # print Teams.objects.get(team_id=request.POST["team_id"]).access_token
         
         actions = []
-        for i, option in enumerate(options):
-            attach = { "name": "option", "text": option, "type": "button", "value": option }
-            actions.append(attach)
-        attachments = [{ "text": "Options", "callback_id": "options", "attachment_type": "default", "actions": actions }]
         
-        attach_string = json.dumps(attachments)
+        attach_string = format_attachments(question, option)
         print attach_string
         print urllib.quote(attach_string)
         postMessage_url = "https://slack.com/api/chat.postMessage"
