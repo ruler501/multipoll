@@ -93,7 +93,7 @@ def oauthcallback(request):
 
 
 def check_token(request):
-    verifier = os.environ.get("SLACK_POLL_VERIFIER", "")
+    verifier = os.environ.get("SLACK_POLL_VERIFIER", "77631c6824c0fb85318c29894662fa79")
     if request.method != "POST":
         return HttpResponseBadRequest("400 Request should be of type POST.")
     try:
