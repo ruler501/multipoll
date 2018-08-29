@@ -149,7 +149,7 @@ def interactive_button(request):
     votes[payload["actions"][0]["value"]].append(payload["user"]["name"])
     text = format_text(question, options, votes)
     attachments = format_attachments(question, options)
-    postMessage_params = {
+    postMessage = {
         "token": "xoxp-295024425040-295165594001-427015731286-44189cac96fe454bbfe6d1daabb584a1",
         "text": text,
         "icon_url": "https://simplepoll.rocks/static/main/simplepolllogo-colors.png",
