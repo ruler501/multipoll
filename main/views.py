@@ -1,16 +1,42 @@
 from django.shortcuts import render
 from django.http import HttpResponse, HttpResponseBadRequest
 import requests
-from main.models import Teams
+from main.models import Teams, Polls, Votes
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
+from datetime import datetime
 import string
 import random
 from django.views.decorators.csrf import csrf_exempt
 import os
+import time
+import json
 
 # Create your views here.
 
+numbers = ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "keycap_ten"]
+
+def add_poll(timestamp, channel, question, options):
+    print timestamp
+    poll = Polls(timestamp=datetime.fromtimestamp(float(timestamp)), channel=channel, question=question, options=json.dumps(options))
+    poll.save()
+    return poll
+
+def latest_poll(channel):
+    return Polls.objects.filter(channel=channel).latest('timestamp')
+
+def update_vote(poll, user, content):
+    content = json.dumps(content)
+    try:
+        vote = Votes.objects.get(poll=poll, user=user)
+        vote.content = content
+    except ObjectDoesNotExist:
+        vote = Votes(poll=poll, user=user, content=content)
+    vote.save()
+    return vote
+
+def get_all_votes(poll):
+    return Votes.objects.filter(poll=poll)
 
 def index(request):
     state = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(36))
@@ -19,7 +45,7 @@ def index(request):
     return render(request, "main/index.html", context)
 
 
-client_id = "16839103392.17540259856"
+client_id = "4676884434.375651972439"
 client_secret = os.environ.get("SLACK_CLIENT_SECRET", "")
 
 
@@ -66,8 +92,7 @@ def oauthcallback(request):
     return render(request, "main/oauthcallback.html", context)
 
 
-@csrf_exempt
-def poll(request):
+def check_token(request):
     verifier = os.environ.get("SLACK_POLL_VERIFIER", "")
     if request.method != "POST":
         return HttpResponseBadRequest("400 Request should be of type POST.")
@@ -78,6 +103,24 @@ def poll(request):
     else:
         if verifier != sent_token:
             return HttpResponseBadRequest("400 Request is not signed correctly!")
+
+def format_text(question, options, votes):
+    text = ""
+    text = "*" + question + "*\n\n"
+    for option in range(0, len(options)):
+        toAdd = ":" + numbers[option] + ": " + options[option] + "\n"
+        # Add count + condorcet score here
+        text += unicode(toAdd)
+    for vote in votes:
+        print 'vote', vote
+        text += unicode(vote.content)
+    return text
+
+@csrf_exempt
+def poll(request):
+    check_token(request)
+    print request.POST.items()
+    channel = request.POST["channel_id"]
     data = request.POST["text"]
 
     data = data.replace(u'\u201C', '"')
@@ -91,54 +134,73 @@ def poll(request):
         if i % 2 == 0 and i > 2:
             options.append(items[i-1])
     # all data ready for initial message at this point
-
-    numbers = ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "keycap_ten"]
+    print 'options', options
 
     def sendPollMessage():
-
-        text = ""
-        text = "*" + question + "*\n\n"
-        for option in range(0, len(options)):
-            toAdd = ":" + numbers[option] + ": " + options[option] + "\n"
-            text += unicode(toAdd)
+        text = format_text(question, options, votes=[])
+        print Teams.objects.get(team_id=request.POST["team_id"]).access_token
 
         postMessage_url = "https://slack.com/api/chat.postMessage"
         postMessage_params = {
             "token": Teams.objects.get(team_id=request.POST["team_id"]).access_token,
             "text": text,
-            "channel": request.POST["channel_id"],
+            "channel": channel,
             "username": "Simple Poll",
             "icon_url": "https://simplepoll.rocks/static/main/simplepolllogo-colors.png",
         }
         text_response = requests.post(postMessage_url, params=postMessage_params)
-
+        print 'response text', text_response.json()
         return text_response.json()["ts"]  # return message timestamp
 
     class ChannelDoesNotExist(Exception):
         def __init__(self, *args, **kwargs):
             Exception.__init__(self, *args, **kwargs)
 
-    try:
-        timestamp = sendPollMessage()
-    except ChannelDoesNotExist:
-        return HttpResponse("We cannot add reactions to the channel you posted to. You will have to add your own. Sorry!. :(")
 
-    def addNumberReaction(number):
+    timestamp = sendPollMessage()
+    print timestamp
+    print add_poll(timestamp, channel, question, options).timestamp
 
-        reactions_url = "https://slack.com/api/reactions.add"
+    return HttpResponse()  # Empty 200 HTTP response, to not display any additional content in Slack
 
-        reactions_params = {
+@csrf_exempt
+def vote(request):
+    check_token(request)
+    print request.POST.items()
+    data = request.POST["text"].split(' ')
+    channel = request.POST["channel_id"]
+    user = request.POST["user_name"]
+
+    poll = latest_poll(channel)
+    timestamp = poll.timestamp
+    options = json.loads(poll.options)
+    print poll, timestamp, options
+    votes = [int(x) for x in data][:len(options)]
+
+    vote = update_vote(poll, user, votes)
+    all_votes = get_all_votes(timestamp)
+    
+
+    def updatePollMessage():
+        text = format_text(poll.question, options, votes=all_votes)
+        str_time = unicode('%.6f' % (time.mktime(timestamp.timetuple()) + timestamp.microsecond/1000000.))
+        print str_time
+
+        postMessage_url = "https://slack.com/api/chat.update"
+        postMessage_params = {
             "token": Teams.objects.get(team_id=request.POST["team_id"]).access_token,
-            "name": number,
-            "channel": request.POST["channel_id"],
-            "timestamp": timestamp
+            "channel": channel,
+            "text": text,
+            "timestamp": str_time,
+
         }
+        print postMessage_params
+        text_response = requests.post(postMessage_url, params=postMessage_params)
+        print 'sending text', text_response
+        return text_response.json()
 
-        add_reaction = requests.get(reactions_url, params=reactions_params)
-
-    for option in range(0, len(options)):
-        addNumberReaction(numbers[option])
-
+    result = updatePollMessage()
+    print result
     return HttpResponse()  # Empty 200 HTTP response, to not display any additional content in Slack
 
 
