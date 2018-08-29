@@ -120,10 +120,10 @@ def format_text(question, options, votes):
     
 @csrf_exempt
 def interactive_button(request):
+    print request.POST.items()
     errorcode = check_token(request)
     if errorcode is not None:
         return errorcode
-    print request.POST.items()
     return HttpResponse()
 
 @csrf_exempt
