@@ -144,12 +144,12 @@ def poll(request):
         text = format_text(question, options, votes=[])
         # print Teams.objects.get(team_id=request.POST["team_id"]).access_token
         
-        attachments = []
+		actions = []
         for i, option in enumerate(options):
-            attach = { "callback_id": "option_" + str(i), "attachment_type": "default", "actions": [ {
-                        "name": option, "text": option, "type": "button", "value": "pressed" } ] }
-            attachments.append(attach)
-        
+            attach = { "name": "option", "text": option, "type": "button", "value": option } ] }
+            actions.append(attach)
+        attachments = [{ "callback_id": "options", "attachment_type": "default", "actions": actions }]
+		
         attach_string = json.dumps(attachments)
         print attach_string
         print urllib.quote_plus(attach_string)
@@ -159,7 +159,7 @@ def poll(request):
             "text": text,
             "channel": channel,
             "icon_url": "https://simplepoll.rocks/static/main/simplepolllogo-colors.png",
-            "attachments": urllib.quote_plus(attach_string)
+            "attachments": attach_string
         }
         text_response = requests.post(postMessage_url, params=postMessage_params)
         print 'response text', text_response.json()
