@@ -145,7 +145,6 @@ def poll(request):
             "token": "xoxp-295024425040-295165594001-427015731286-44189cac96fe454bbfe6d1daabb584a1",
             "text": text,
             "channel": channel,
-            "username": "Simple Poll",
             "icon_url": "https://simplepoll.rocks/static/main/simplepolllogo-colors.png",
         }
         text_response = requests.post(postMessage_url, params=postMessage_params)
@@ -159,7 +158,7 @@ def poll(request):
 
     timestamp = sendPollMessage()
     print timestamp
-    print add_poll(timestamp, channel, question, options).timestamp
+    # print add_poll(timestamp, channel, question, options).timestamp
 
     return HttpResponse()  # Empty 200 HTTP response, to not display any additional content in Slack
 
@@ -188,7 +187,7 @@ def vote(request):
 
         postMessage_url = "https://slack.com/api/chat.update"
         postMessage_params = {
-            "token": Teams.objects.get(team_id=request.POST["team_id"]).access_token,
+            "token": "xoxp-295024425040-295165594001-427015731286-44189cac96fe454bbfe6d1daabb584a1",
             "channel": channel,
             "text": text,
             "timestamp": str_time,
