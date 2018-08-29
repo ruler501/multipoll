@@ -26,7 +26,7 @@ SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "")
 DEBUG = True
 DEBUG_PROPAGATE_EXCEPTIONS = DEBUG
 
-ALLOWED_HOSTS = ["ph-simple-poll.herokuapp.com"]
+ALLOWED_HOSTS = ["quiet-plateau-59061.herokuapp.com"]
 
 1
 # Application definition

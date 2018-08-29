@@ -17,7 +17,7 @@ class Teams(models.Model):
         return str(self.unique_uuid)
 
 class Polls(models.Model):
-    timestamp = models.DateTimeField(primary_key=True, unique=True)
+    timestamp = models.CharField(max_length=100, primary_key=True, unique=True)
     channel = models.CharField(max_length=1000)
     question = models.CharField(max_length=1000)
     options = models.CharField(max_length=1000)
@@ -25,8 +25,8 @@ class Polls(models.Model):
 class Votes(models.Model):
     vote_id = models.AutoField(primary_key=True)
     poll = models.ForeignKey(Polls)
-    user = models.CharField(max_length=1000)
-    content = models.CharField(max_length=1000)
+    option = models.CharField(max_length=100)
+    users = models.CharField(max_length=1000)
 
 
 
