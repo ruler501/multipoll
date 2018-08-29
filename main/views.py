@@ -130,6 +130,7 @@ def format_text(question, options, votes):
     return text
 
 def format_attachments(question, options):
+	actions = []
     for option in options:
         attach = { "name": "option", "text": option, "type": "button", "value": option }
         actions.append(attach)
@@ -180,10 +181,7 @@ def poll(request):
 
     def sendPollMessage():
         text = format_text(question, options, votes=defaultdict(list))
-        # print Teams.objects.get(team_id=request.POST["team_id"]).access_token
-        
-        actions = []
-        
+
         attach_string = format_attachments(question, option)
         print attach_string
         print urllib.quote(attach_string)
