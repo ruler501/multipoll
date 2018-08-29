@@ -49,8 +49,8 @@ def parse_message(message):
     for i, line in enumerate(message['text'].split('\n')):
         if i < 2:
             continue
-        names = options[i].join(line.split(options[i])[1:]).split(', ')
-        votes[options[i]] = names
+        names = options[i-2].join(line.split(options[i-2])[1:]).split(', ')
+        votes[options[i-2]] = names
         
     print [message['text']]
     print votes
