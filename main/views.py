@@ -146,16 +146,25 @@ def interactive_button(request):
     payload = json.loads(request.POST['payload'])
     print payload.items()
     question, options, votes = parse_message(payload['original_message'])
-    votes[payload["actions"][0]["value"]].append(payload["user"]["name"])
+    lst = votes[payload["actions"][0]["value"]]
+	if payload['user']['name'] in lst:
+		votes[payload["actions"][0]["value"]].remove(payload['user']['name'])
+	else:
+		votes[payload['actions'][0]['value']].append(payload["user"]["name"])
     text = format_text(question, options, votes)
     attachments = format_attachments(question, options)
-    postMessage = {
+	methodUrl = 'https://slack.com/api/chat.update'
+    updateMessage = {
         "token": "xoxp-295024425040-295165594001-427015731286-44189cac96fe454bbfe6d1daabb584a1",
-        "text": text,
-        "icon_url": "https://simplepoll.rocks/static/main/simplepolllogo-colors.png",
-        "attachments": attachments
+        "channel": payload['channel']['id'],
+		"ts": payload['original_message']['ts'],
+		"text": text,
+        "attachments": attachments,
+		"parse": "full"
     }
-    return HttpResponse(json.dumps(postMessage))
+	text_response = requests.post(methodUrl, params=updateMessage)
+    print 'response text', text_response.json()
+    return HttpResponse()
 
 @csrf_exempt
 def poll(request):
