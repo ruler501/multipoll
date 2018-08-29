@@ -100,8 +100,8 @@ def check_token(request):
     sent_token = ""
     if "token" in request.POST:
         sent_token = request.POST["token"]
-    elif "payload" in request.POST and "token" in request.POST["payload"]:
-        sent_token = request.POST["payload"]["token"]
+    elif "payload" in request.POST and "token" in json.loads(request.POST["payload"]):
+        sent_token = json.loads(request.POST["payload"])["token"]
     else:
         return HttpResponseBadRequest("400 Request is not signed!")
 
@@ -126,7 +126,8 @@ def interactive_button(request):
     errorcode = check_token(request)
     if errorcode is not None:
         return errorcode
-    print request.POST['payload'].items()
+	payload = json.loads(request.POST['payload'])
+    print payload.items()
     return HttpResponse()
 
 @csrf_exempt
