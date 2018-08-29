@@ -124,7 +124,7 @@ def format_text(question, options, votes):
     text = "*" + question + "*\n\n"
     for option in range(0, len(options)):
         toAdd = ":" + numbers[option] + ": " + options[option]
-        toAdd += ', '.join(votes[options[option]])
+        toAdd += ', '.join(['@' + x for x in votes[options[option]]])
         # Add count + condorcet score here
         text += unicode(toAdd)
     return text
@@ -144,7 +144,7 @@ def interactive_button(request):
         return errorcode
     payload = json.loads(request.POST['payload'])
     print payload.items()
-    question, options, votes = parse_message(payload['original_method'])
+    question, options, votes = parse_message(payload['original_message'])
     votes[payload["actions"]["value"]].append(payload["user"]["name"])
     text = format_text(question, options, votes)
     attachments = format_attachments(question, options)
