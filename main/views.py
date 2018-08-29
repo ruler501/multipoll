@@ -148,7 +148,7 @@ def poll(request):
         for i, option in enumerate(options):
             attach = { "callback_id": "option_" + str(i), "attachment_type": "default", "actions": [ {
                         "name": option, "text": option, "type": "button", "value": "pressed" } ] }
-            attachements.append(attach)
+            attachments.append(attach)
         
         postMessage_url = "https://slack.com/api/chat.postMessage"
         postMessage_params = {
