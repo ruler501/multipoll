@@ -150,13 +150,16 @@ def poll(request):
                         "name": option, "text": option, "type": "button", "value": "pressed" } ] }
             attachments.append(attach)
         
+		attach_string = json.dumps(attachments)
+		print attach_string
+		print urllib.quote_plus(attach_string)
         postMessage_url = "https://slack.com/api/chat.postMessage"
         postMessage_params = {
             "token": "xoxp-295024425040-295165594001-427015731286-44189cac96fe454bbfe6d1daabb584a1",
             "text": text,
             "channel": channel,
             "icon_url": "https://simplepoll.rocks/static/main/simplepolllogo-colors.png",
-            "attachments": urllib.quote_plus(json.dumps(attachments))
+            "attachments": urllib.quote_plus(attach_string)
         }
         text_response = requests.post(postMessage_url, params=postMessage_params)
         print 'response text', text_response.json()
