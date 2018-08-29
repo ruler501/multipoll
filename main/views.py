@@ -145,7 +145,7 @@ def interactive_button(request):
     payload = json.loads(request.POST['payload'])
     print payload.items()
     question, options, votes = parse_message(payload['original_message'])
-    votes[payload["actions"]["value"]].append(payload["user"]["name"])
+    votes[payload["actions"][0]["value"]].append(payload["user"]["name"])
     text = format_text(question, options, votes)
     attachments = format_attachments(question, options)
     postMessage_params = {
