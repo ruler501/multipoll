@@ -150,9 +150,9 @@ def poll(request):
                         "name": option, "text": option, "type": "button", "value": "pressed" } ] }
             attachments.append(attach)
         
-		attach_string = json.dumps(attachments)
-		print attach_string
-		print urllib.quote_plus(attach_string)
+        attach_string = json.dumps(attachments)
+        print attach_string
+        print urllib.quote_plus(attach_string)
         postMessage_url = "https://slack.com/api/chat.postMessage"
         postMessage_params = {
             "token": "xoxp-295024425040-295165594001-427015731286-44189cac96fe454bbfe6d1daabb584a1",
