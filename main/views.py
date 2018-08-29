@@ -201,7 +201,7 @@ def poll(request):
     def sendPollMessage():
         text = format_text(question, options, votes=defaultdict(list))
 
-        attach_string = format_attachments(question, option)
+        attach_string = format_attachments(question, options)
         print attach_string
         print urllib.quote(attach_string)
         postMessage_url = "https://slack.com/api/chat.postMessage"
