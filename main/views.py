@@ -130,7 +130,7 @@ def format_text(question, options, votes):
     return text
 
 def format_attachments(question, options):
-	actions = []
+    actions = []
     for option in options:
         attach = { "name": "option", "text": option, "type": "button", "value": option }
         actions.append(attach)
