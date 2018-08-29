@@ -117,6 +117,14 @@ def format_text(question, options, votes):
         print 'vote', vote
         text += unicode(vote.content)
     return text
+	
+@csrf_exempt
+def interactive_button(request):
+    errorcode = check_token(request)
+    if errorcode is not None:
+        return errorcode
+	print request.POST.items()
+	return HttpResponse()
 
 @csrf_exempt
 def poll(request):
