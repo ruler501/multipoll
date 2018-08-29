@@ -46,7 +46,7 @@ def index(request):
 
 
 client_id = "4676884434.375651972439"
-client_secret = os.environ.get("SLACK_CLIENT_SECRET", "")
+client_secret = os.environ.get("SLACK_CLIENT_SECRET", "xoxp-295024425040-295165594001-427015731286-44189cac96fe454bbfe6d1daabb584a1")
 
 
 def oauthcallback(request):
