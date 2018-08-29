@@ -45,9 +45,19 @@ def parse_message(message):
     for opt in message['attachments'][0]['actions']:
         options.append(opt['text'])
     
+    votes = defaultdict(list)
+    for i, line in enumerate(message['text'].split('\n')):
+        if i < 2:
+            continue
+        names = options[i].join(line.split(options[i])[1:]).split(', ')
+        votes[options[i]] = names
+        
+    print [message['text']]
+    print votes
+    
     question = message['text'].split('*')[1]
     
-    return question, options, defaultdict(list)
+    return question, options, votes
     
 def index(request):
     state = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(36))
@@ -126,7 +136,7 @@ def format_text(question, options, votes):
         toAdd = ":" + numbers[option] + ": " + options[option]
         toAdd += ', '.join(['@' + x for x in votes[options[option]]])
         # Add count + condorcet score here
-        text += unicode(toAdd)
+        text += unicode(toAdd + '\n')
     return text
 
 def format_attachments(question, options):
@@ -148,9 +158,9 @@ def interactive_button(request):
     question, options, votes = parse_message(payload['original_message'])
     lst = votes[payload["actions"][0]["value"]]
     if payload['user']['name'] in lst:
-        votes[payload["actions"][0]["value"]].remove(payload['user']['name'])
+        votes[payload["actions"][0]["value"]].remove("<@" + payload['user']['id'] + ">")
     else:
-        votes[payload['actions'][0]['value']].append(payload["user"]["name"])
+        votes[payload['actions'][0]['value']].append("<@" + payload["user"]["id"] + ">")
     text = format_text(question, options, votes)
     attachments = format_attachments(question, options)
     methodUrl = 'https://slack.com/api/chat.update'
