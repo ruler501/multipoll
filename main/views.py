@@ -159,7 +159,7 @@ def poll(request):
             "text": text,
             "channel": channel,
             "icon_url": "https://simplepoll.rocks/static/main/simplepolllogo-colors.png",
-            "attachments": urllib.quote(attach_string)
+            "attachments": attach_string
         }
         text_response = requests.post(postMessage_url, params=postMessage_params)
         print 'response text', text_response.json()
