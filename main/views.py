@@ -47,7 +47,7 @@ def parse_message(message):
     
     votes = defaultdict(list)
     for i, line in enumerate(message['text'].split('\n')):
-        if i < 2:
+        if i < 2 or i - 2 >= len(options):
             continue
         print i, line
         names = options[i-2].join(line.split(options[i-2])[1:]).split(', ')
