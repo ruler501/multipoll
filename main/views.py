@@ -146,7 +146,7 @@ def poll(request):
         
         actions = []
         for i, option in enumerate(options):
-            attach = { "name": "option", "text": option, "type": "button", "value": option } ] }
+            attach = { "name": "option", "text": option, "type": "button", "value": option }
             actions.append(attach)
         attachments = [{ "callback_id": "options", "attachment_type": "default", "actions": actions }]
         
