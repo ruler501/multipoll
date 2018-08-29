@@ -126,7 +126,7 @@ def interactive_button(request):
     errorcode = check_token(request)
     if errorcode is not None:
         return errorcode
-	payload = json.loads(request.POST['payload'])
+    payload = json.loads(request.POST['payload'])
     print payload.items()
     return HttpResponse()
 
