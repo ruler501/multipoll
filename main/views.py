@@ -53,7 +53,7 @@ def parse_message(message):
             continue
         print i, line
         names = options[i-2].join(line.split(options[i-2])[1:]).replace('<@', '').replace('>', '').split(', ')
-        if '' in name:
+        if '' in names:
             names.remove('')
         vote_list = []
         for name in names:
