@@ -158,7 +158,7 @@ def poll(request):
 
     timestamp = sendPollMessage()
     print timestamp
-    # print add_poll(timestamp, channel, question, options).timestamp
+    print add_poll(timestamp, channel, question, options).timestamp
 
     return HttpResponse()  # Empty 200 HTTP response, to not display any additional content in Slack
 
