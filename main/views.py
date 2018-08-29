@@ -103,7 +103,7 @@ def check_token(request):
     else:
         if verifier != sent_token:
             return HttpResponseBadRequest("400 Request is not signed correctly!")
-	return None
+    return None
 
 def format_text(question, options, votes):
     text = ""
@@ -121,8 +121,8 @@ def format_text(question, options, votes):
 def poll(request):
     errorcode = check_token(request)
     if errorcode is not None:
-		return errorcode
-	print request.POST.items()
+        return errorcode
+    print request.POST.items()
     channel = request.POST["channel_id"]
     data = request.POST["text"]
 
@@ -169,7 +169,7 @@ def poll(request):
 def vote(request):
     errorcode = check_token(request)
     if errorcode is not None:
-		return errorcode
+        return errorcode
     print request.POST.items()
     data = request.POST["text"].split(' ')
     channel = request.POST["channel_id"]
@@ -205,8 +205,8 @@ def vote(request):
 
     result = updatePollMessage()
     print result
-	if 'error' in result:
-		raise Exception("Failed to update the message")
+    if 'error' in result:
+        raise Exception("Failed to update the message")
     return HttpResponse()  # Empty 200 HTTP response, to not display any additional content in Slack
 
 
