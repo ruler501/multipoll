@@ -148,18 +148,18 @@ def poll(request):
         for i, option in enumerate(options):
             attach = { "name": "option", "text": option, "type": "button", "value": option }
             actions.append(attach)
-        attachments = [{ "callback_id": "options", "attachment_type": "default", "actions": actions }]
+        attachments = [{ "text": "Options", "callback_id": "options", "attachment_type": "default", "actions": actions }]
         
         attach_string = json.dumps(attachments)
         print attach_string
-        print urllib.quote_plus(attach_string)
+        print urllib.quote(attach_string)
         postMessage_url = "https://slack.com/api/chat.postMessage"
         postMessage_params = {
             "token": "xoxp-295024425040-295165594001-427015731286-44189cac96fe454bbfe6d1daabb584a1",
             "text": text,
             "channel": channel,
             "icon_url": "https://simplepoll.rocks/static/main/simplepolllogo-colors.png",
-            "attachments": attach_string
+            "attachments": urllib.quote(attach_string)
         }
         text_response = requests.post(postMessage_url, params=postMessage_params)
         print 'response text', text_response.json()
