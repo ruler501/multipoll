@@ -40,7 +40,9 @@ def update_vote(poll, user, content):
 def get_all_votes(poll):
     return Votes.objects.filter(poll=poll)
 
+name_cache = {}
 def parse_message(message):
+    global name_cache
     options = []
     for opt in message['attachments'][0]['actions']:
         options.append(opt['text'])
@@ -50,8 +52,24 @@ def parse_message(message):
         if i < 2 or i - 2 >= len(options):
             continue
         print i, line
-        names = options[i-2].join(line.split(options[i-2])[1:]).split(', ')
-        votes[options[i-2]] = names
+        names = options[i-2].join(line.split(options[i-2])[1:]).replace('<@', '').replace('>', '').split(', ')
+        if '' in name:
+            names.remove('')
+        vote_list = []
+        for name in names:
+            if name in name_cache:
+                vote_list.append(name_cache[name])
+            else:
+                methodUrl = 'https://slack.com/api/users.info'
+                methodParams = {
+                    "token": "xoxp-295024425040-295165594001-427015731286-44189cac96fe454bbfe6d1daabb584a1",
+                    "user": name
+                }
+                response_data = requests.get(methodUrl, params=methodParams)
+                res = response_data.json()["user"]["name"]
+                vote_list.append(res)
+                name_cache[name] = res
+        votes[options[i-2]] = vote_list
         
     print [message['text']]
     print votes
@@ -135,7 +153,7 @@ def format_text(question, options, votes):
     text = "*" + question + "*\n\n"
     for option in range(0, len(options)):
         toAdd = ":" + numbers[option] + ": " + options[option]
-        toAdd += ', '.join(['@' + x for x in votes[options[option]]])
+        toAdd += ', '.join(votes[options[option]])
         # Add count + condorcet score here
         text += unicode(toAdd + '\n')
     return text
@@ -158,10 +176,10 @@ def interactive_button(request):
     print payload.items()
     question, options, votes = parse_message(payload['original_message'])
     lst = votes[payload["actions"][0]["value"]]
-    if payload['user']['name'] in lst:
-        votes[payload["actions"][0]["value"]].remove("<@" + payload['user']['id'] + ">")
+    if "@" + payload['user']['name'] in lst:
+        votes[payload["actions"][0]["value"]].remove("@" + payload['user']['name'])
     else:
-        votes[payload['actions'][0]['value']].append("<@" + payload["user"]["id"] + ">")
+        votes[payload['actions'][0]['value']].append("@" + payload["user"]["name"])
     text = format_text(question, options, votes)
     attachments = format_attachments(question, options)
     methodUrl = 'https://slack.com/api/chat.update'
