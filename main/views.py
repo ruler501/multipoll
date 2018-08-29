@@ -97,13 +97,16 @@ def check_token(request):
     verifier = os.environ.get("SLACK_POLL_VERIFIER", "gcoZ4rfrvaEeCCC6tcYByUVX")
     if request.method != "POST":
         return HttpResponseBadRequest("400 Request should be of type POST.")
-    try:
+    sent_token = ""
+    if "token" in request.POST:
         sent_token = request.POST["token"]
-    except KeyError:
-        return HttpResponseBadRequest("400 Request is not signed!")
+    elif "payload" in request.POST and "token" in request.POST["payload"]:
+        sent_token = request.POST["payload"]["token"]
     else:
-        if verifier != sent_token:
-            return HttpResponseBadRequest("400 Request is not signed correctly!")
+        return HttpResponseBadRequest("400 Request is not signed!")
+
+    if verifier != sent_token:
+        return HttpResponseBadRequest("400 Request is not signed correctly!")
     return None
 
 def format_text(question, options, votes):
@@ -120,10 +123,10 @@ def format_text(question, options, votes):
     
 @csrf_exempt
 def interactive_button(request):
-    print request.POST.items()
     errorcode = check_token(request)
     if errorcode is not None:
         return errorcode
+    print request.POST['payload'].items()
     return HttpResponse()
 
 @csrf_exempt
