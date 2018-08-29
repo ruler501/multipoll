@@ -144,12 +144,12 @@ def poll(request):
         text = format_text(question, options, votes=[])
         # print Teams.objects.get(team_id=request.POST["team_id"]).access_token
         
-		actions = []
+        actions = []
         for i, option in enumerate(options):
             attach = { "name": "option", "text": option, "type": "button", "value": option } ] }
             actions.append(attach)
         attachments = [{ "callback_id": "options", "attachment_type": "default", "actions": actions }]
-		
+        
         attach_string = json.dumps(attachments)
         print attach_string
         print urllib.quote_plus(attach_string)
