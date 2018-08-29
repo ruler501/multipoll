@@ -153,7 +153,7 @@ def interactive_button(request):
         "token": "xoxp-295024425040-295165594001-427015731286-44189cac96fe454bbfe6d1daabb584a1",
         "text": text,
         "icon_url": "https://simplepoll.rocks/static/main/simplepolllogo-colors.png",
-        "attachments": attach_string
+        "attachments": attachments
     }
     return HttpResponse(json.dumps(postMessage))
 
