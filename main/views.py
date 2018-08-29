@@ -67,8 +67,7 @@ def parse_message(message):
                 }
                 response_data = requests.get(methodUrl, params=methodParams)
                 response = response_data.json()
-                print name, response
-                res = response["user"]["name"]
+                res = '@' + response["user"]["name"]
                 vote_list.append(res)
                 name_cache[name] = res
         votes[options[i-2]] = vote_list
