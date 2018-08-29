@@ -138,11 +138,11 @@ def poll(request):
 
     def sendPollMessage():
         text = format_text(question, options, votes=[])
-        print Teams.objects.get(team_id=request.POST["team_id"]).access_token
+        # print Teams.objects.get(team_id=request.POST["team_id"]).access_token
 
         postMessage_url = "https://slack.com/api/chat.postMessage"
         postMessage_params = {
-            "token": Teams.objects.get(team_id=request.POST["team_id"]).access_token,
+            "token": "xoxp-295024425040-295165594001-427015731286-44189cac96fe454bbfe6d1daabb584a1",
             "text": text,
             "channel": channel,
             "username": "Simple Poll",
