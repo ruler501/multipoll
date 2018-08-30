@@ -27,7 +27,7 @@ def add_poll(timestamp, channel, question, options):
 def latest_poll(channel):
     return Polls.objects.filter(channel=channel).latest('timestamp')
 
-def timestamped_poll(channel, timestamp)
+def timestamped_poll(channel, timestamp):
     return Polls.objects.filter(channel=channel, timestamp=timestamp)
     
 def update_vote(poll, option, users):
@@ -168,7 +168,8 @@ def format_attachments(question, options):
     for option in options:
         attach = { "name": "option", "text": option, "type": "button", "value": option }
         actions.append(attach)
-    actions.append({ "name": "addMore", "text": "Add More", "type": "button", "value": "Add More" })
+    if len(options) < 10:
+        actions.append({ "name": "addMore", "text": "Add More", "type": "button", "value": "Add More" })
     attachments = [{ "text": "Options", "callback_id": "options", "attachment_type": "default", "actions": actions }]
     
     return json.dumps(attachments)
@@ -290,50 +291,6 @@ def poll(request):
     print timestamp
     print add_poll(timestamp, channel, question, options).timestamp
 
-    return HttpResponse()  # Empty 200 HTTP response, to not display any additional content in Slack
-
-@csrf_exempt
-def vote(request):
-    errorcode = check_token(request)
-    if errorcode is not None:
-        return errorcode
-    print request.POST.items()
-    data = request.POST["text"].split(' ')
-    channel = request.POST["channel_id"]
-    user = request.POST["user_name"]
-
-    poll = latest_poll(channel)
-    timestamp = poll.timestamp
-    options = json.loads(poll.options)
-    print poll, timestamp, options
-    votes = [int(x) for x in data][:len(options)]
-
-    vote = update_vote(poll, user, votes)
-    all_votes = get_all_votes(timestamp)
-    
-
-    def updatePollMessage():
-        text = format_text(poll.question, options, votes=all_votes)
-        str_time = unicode('%.6f' % (time.mktime(timestamp.timetuple()) + timestamp.microsecond/1000000.))
-        print str_time
-
-        postMessage_url = "https://slack.com/api/chat.update"
-        postMessage_params = {
-            "token": "xoxp-295024425040-295165594001-427015731286-44189cac96fe454bbfe6d1daabb584a1",
-            "channel": channel,
-            "text": text,
-            "timestamp": str_time,
-
-        }
-        print postMessage_params
-        text_response = requests.post(postMessage_url, params=postMessage_params)
-        print 'sending text', text_response
-        return text_response.json()
-
-    result = updatePollMessage()
-    print result
-    if 'error' in result:
-        raise Exception("Failed to update the message")
     return HttpResponse()  # Empty 200 HTTP response, to not display any additional content in Slack
 
 
