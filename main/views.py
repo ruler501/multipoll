@@ -176,7 +176,7 @@ def create_dialog(payload):
         "token": "xoxp-295024425040-295165594001-427015731286-44189cac96fe454bbfe6d1daabb584a1",
         "trigger_id": payload['trigger_id'],
         "dialog": {
-            "title": "Add an option"
+            "title": "Add an option",
             "submit_label": "CreateOption",
             "notify_on_cancel": False,
             "state": "Limo",
