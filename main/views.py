@@ -192,7 +192,7 @@ def create_dialog(payload):
     }
     methodParams['dialog'] = json.dumps(methodParams['dialog'])
     print "Params", methodParams
-    response_data = raequests.post(methodUrl, params=methodParams)
+    response_data = requests.post(methodUrl, params=methodParams)
     print "Dialog response", response_data.json()
         
     
