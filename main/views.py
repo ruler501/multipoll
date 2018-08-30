@@ -190,7 +190,7 @@ def create_dialog(payload):
         }
     }
     response_data = requests.post(methodUrl, params=methodParams)
-    print response_data.json()
+    print "Dialog response", response_data.json()
         
     
 @csrf_exempt
@@ -203,9 +203,9 @@ def interactive_button(request):
     question, options, votes = parse_message(payload['original_message'])
     if payload["callback_id"] == "newOption":
         options.append(payload['submission']['new_option'])
-    elif payload["actions"][0]["value"] == "addMore":
+    elif payload["actions"][0]["name"] == "addMore":
         create_dialog(payload)
-    elif payload['actions'][0]["value"] == "option":
+    elif payload['actions'][0]["name"] == "option":
         lst = votes[payload["actions"][0]["value"]]
         if "@" + payload['user']['name'] in lst:
             votes[payload["actions"][0]["value"]].remove("@" + payload['user']['name'])
