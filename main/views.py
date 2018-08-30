@@ -217,6 +217,7 @@ def interactive_button(request):
             votes[vote.option] = json.loads(vote.users)
         options.append(payload['submission']['new_option'])
         poll.options = json.dumps(options)
+        poll.save()
     elif payload["actions"][0]["name"] == "addMore":
         ts = payload['original_message']['ts']
         question, options, votes = parse_message(payload['original_message'])
