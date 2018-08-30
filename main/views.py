@@ -192,19 +192,19 @@ def create_dialog(payload):
             }]
         }
     }
-	methodParams['dialog'] = {
-	  "callback_id": "newOption",
-	  "title": "Request a Ride",
-	  "submit_label": "Request",
-	  "state": payload['original_message']['ts'],
-	  "elements": [
-		{
-		  "type": "text",
-		  "label": "Pickup Location",
-		  "name": "loc_origin"
-		}
-	  ]
-	}
+    methodParams['dialog'] = {
+      "callback_id": "newOption",
+      "title": "Request a Ride",
+      "submit_label": "Request",
+      "state": payload['original_message']['ts'],
+      "elements": [
+        {
+          "type": "text",
+          "label": "Pickup Location",
+          "name": "loc_origin"
+        }
+      ]
+    }
     print "Params", methodParams
     response_data = requests.post(methodUrl, params=methodParams)
     print "Dialog response", response_data.json()
