@@ -164,9 +164,32 @@ def format_attachments(question, options):
     for option in options:
         attach = { "name": "option", "text": option, "type": "button", "value": option }
         actions.append(attach)
+    actions.append({ "name": "addMore", "text": "Add More", "type": "button", "value": "Add More" })
     attachments = [{ "text": "Options", "callback_id": "options", "attachment_type": "default", "actions": actions }]
     
     return json.dumps(attachments)
+
+
+def create_dialog(payload):
+    methodUrl = 'https://slack.com/api/dialog.open'
+    methodParams = {
+        "token": "xoxp-295024425040-295165594001-427015731286-44189cac96fe454bbfe6d1daabb584a1",
+        "trigger_id": payload['trigger_id'],
+        "dialog": {
+            "title": "Add an option"
+            "submit_label": "CreateOption",
+            "notify_on_cancel": False,
+            "state": "Limo",
+            "callback_id": "newOption",
+            elements: [{
+                "type": "text",
+                "label": "New Option",
+                "name": "new_option"
+            }]
+        }
+    }
+    response_data = requests.post(methodUrl, params=methodParams)
+        
     
 @csrf_exempt
 def interactive_button(request):
@@ -176,11 +199,16 @@ def interactive_button(request):
     payload = json.loads(request.POST['payload'])
     print payload.items()
     question, options, votes = parse_message(payload['original_message'])
-    lst = votes[payload["actions"][0]["value"]]
-    if "@" + payload['user']['name'] in lst:
-        votes[payload["actions"][0]["value"]].remove("@" + payload['user']['name'])
-    else:
-        votes[payload['actions'][0]['value']].append("@" + payload["user"]["name"])
+    if payload["callback_id"] == "newOption":
+        options.append(payload['submission']['new_option'])
+    elif payload["actions"][0]["value"] == "addMore":
+        create_dialog(payload)
+    elif payload['actions'][0]["value"] == "option":
+        lst = votes[payload["actions"][0]["value"]]
+        if "@" + payload['user']['name'] in lst:
+            votes[payload["actions"][0]["value"]].remove("@" + payload['user']['name'])
+        else:
+            votes[payload['actions'][0]['value']].append("@" + payload["user"]["name"])
     text = format_text(question, options, votes)
     attachments = format_attachments(question, options)
     methodUrl = 'https://slack.com/api/chat.update'
