@@ -190,9 +190,9 @@ def create_dialog(payload):
             }]
         }
     }
-	methodParams['dialog'] = json.dumps(methodParams['dialog'])
+    methodParams['dialog'] = json.dumps(methodParams['dialog'])
     print "Params", methodParams
-    response_data = requests.post(methodUrl, params=methodParams)
+    response_data = raequests.post(methodUrl, params=methodParams)
     print "Dialog response", response_data.json()
         
     
@@ -206,23 +206,23 @@ def interactive_button(request):
     question = ""
     options = []
     votes = defaultdict(list)
-	ts = ""
+    ts = ""
     if payload["callback_id"] == "newOption":
-		ts = payload['state']
+        ts = payload['state']
         poll = timestamped_poll(payload['state'])
         question = poll.question
         options = json.loads(poll.options)
         votes_obj = get_all_votes(poll)
         for vote in votes_obj:
             votes[vote.option] = json.loads(vote.users)
-		options.append(payload['submission']['new_option'])
+        options.append(payload['submission']['new_option'])
         poll.options = json.dumps(options)
     elif payload["actions"][0]["name"] == "addMore":
-		ts = payload['original_message']['ts']
+        ts = payload['original_message']['ts']
         question, options, votes = parse_message(payload['original_message'])
         create_dialog(payload)
     elif payload['actions'][0]["name"] == "option":
-		ts = payload['original_message']['ts']
+        ts = payload['original_message']['ts']
         question, options, votes = parse_message(payload['original_message'])
         lst = votes[payload["actions"][0]["value"]]
         if "@" + payload['user']['name'] in lst:
