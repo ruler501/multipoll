@@ -192,6 +192,7 @@ def create_dialog(payload):
             }]
         }
     }
+	print "Params", methodParams
     response_data = requests.post(methodUrl, params=methodParams)
     print "Dialog response", response_data.json()
         
