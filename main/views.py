@@ -27,13 +27,16 @@ def add_poll(timestamp, channel, question, options):
 def latest_poll(channel):
     return Polls.objects.filter(channel=channel).latest('timestamp')
 
-def update_vote(poll, user, content):
-    content = json.dumps(content)
+def timestamped_poll(channel, timestamp)
+    return Polls.objects.filter(channel=channel, timestamp=timestamp)
+    
+def update_vote(poll, option, users):
+    users = json.dumps(users)
     try:
-        vote = Votes.objects.get(poll=poll, user=user)
-        vote.content = content
+        vote = Votes.objects.get(poll=poll, option=option)
+        vote.users = users
     except ObjectDoesNotExist:
-        vote = Votes(poll=poll, user=user, content=content)
+        vote = Votes(poll=poll, option=option, users=users)
     vote.save()
     return vote
 
@@ -180,7 +183,7 @@ def create_dialog(payload):
             "title": "Add an option",
             "submit_label": "CreateOption",
             "notify_on_cancel": False,
-            "state": "Limo",
+            "state": payload['original_message']['ts'],
             "callback_id": "newOption",
             "elements": [{
                 "type": "text",
@@ -200,17 +203,29 @@ def interactive_button(request):
         return errorcode
     payload = json.loads(request.POST['payload'])
     print payload.items()
-    question, options, votes = parse_message(payload['original_message'])
+    question = ""
+    options = []
+    votes = defaultdict(list)
     if payload["callback_id"] == "newOption":
+        poll = timestamped_poll(payload['channel']['id'], payload['state'])
         options.append(payload['submission']['new_option'])
+        question = poll.question
+        options = json.loads(poll.options)
+        votes_obj = get_all_votes(poll)
+        for vote in votes_obj:
+            votes[vote.option] = json.loads(vote.users)
     elif payload["actions"][0]["name"] == "addMore":
+        question, options, votes = parse_message(payload['original_message'])
         create_dialog(payload)
     elif payload['actions'][0]["name"] == "option":
+        question, options, votes = parse_message(payload['original_message'])
         lst = votes[payload["actions"][0]["value"]]
         if "@" + payload['user']['name'] in lst:
             votes[payload["actions"][0]["value"]].remove("@" + payload['user']['name'])
         else:
             votes[payload['actions'][0]['value']].append("@" + payload["user"]["name"])
+        poll = timestamped_poll(payload['channel']['id'], payload['original_message']['ts'])
+        update_vote(poll, payload['actions'][0]['value'], votes[payload['actions'][0]['value']])
     text = format_text(question, options, votes)
     attachments = format_attachments(question, options)
     methodUrl = 'https://slack.com/api/chat.update'
