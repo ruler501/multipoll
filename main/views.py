@@ -182,7 +182,7 @@ def create_dialog(payload):
             "notify_on_cancel": False,
             "state": "Limo",
             "callback_id": "newOption",
-            elements: [{
+            "elements": [{
                 "type": "text",
                 "label": "New Option",
                 "name": "new_option"
