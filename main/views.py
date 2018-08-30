@@ -181,8 +181,6 @@ def create_dialog(payload):
         "trigger_id": payload['trigger_id'],
         "dialog": {
             "title": "Add an option",
-            "submit_label": "CreateOption",
-            "notify_on_cancel": False,
             "state": payload['original_message']['ts'],
             "callback_id": "newOption",
             "elements": [{
@@ -192,19 +190,7 @@ def create_dialog(payload):
             }]
         }
     }
-    methodParams['dialog'] = {
-      "callback_id": "newOption",
-      "title": "Request a Ride",
-      "submit_label": "Request",
-      "state": payload['original_message']['ts'],
-      "elements": [
-        {
-          "type": "text",
-          "label": "Pickup Location",
-          "name": "loc_origin"
-        }
-      ]
-    }
+	methodParams['dialog'] = json.dumps(methodParams['dialog'])
     print "Params", methodParams
     response_data = requests.post(methodUrl, params=methodParams)
     print "Dialog response", response_data.json()
@@ -220,18 +206,23 @@ def interactive_button(request):
     question = ""
     options = []
     votes = defaultdict(list)
+	ts = ""
     if payload["callback_id"] == "newOption":
+		ts = payload['state']
         poll = timestamped_poll(payload['state'])
-        options.append(payload['submission']['new_option'])
         question = poll.question
         options = json.loads(poll.options)
         votes_obj = get_all_votes(poll)
         for vote in votes_obj:
             votes[vote.option] = json.loads(vote.users)
+		options.append(payload['submission']['new_option'])
+        poll.options = json.dumps(options)
     elif payload["actions"][0]["name"] == "addMore":
+		ts = payload['original_message']['ts']
         question, options, votes = parse_message(payload['original_message'])
         create_dialog(payload)
     elif payload['actions'][0]["name"] == "option":
+		ts = payload['original_message']['ts']
         question, options, votes = parse_message(payload['original_message'])
         lst = votes[payload["actions"][0]["value"]]
         if "@" + payload['user']['name'] in lst:
@@ -246,7 +237,7 @@ def interactive_button(request):
     updateMessage = {
         "token": "xoxp-295024425040-295165594001-427015731286-44189cac96fe454bbfe6d1daabb584a1",
         "channel": payload['channel']['id'],
-        "ts": payload['original_message']['ts'],
+        "ts": ts,
         "text": text,
         "attachments": attachments,
         "parse": "full"
