@@ -19,16 +19,15 @@ import urllib
 numbers = ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "keycap_ten"]
 
 def add_poll(timestamp, channel, question, options):
-    print timestamp
-    poll = Polls(timestamp=datetime.fromtimestamp(float(timestamp)), channel=channel, question=question, options=json.dumps(options))
+    poll = Polls(timestamp=timestamp, channel=channel, question=question, options=json.dumps(options))
     poll.save()
     return poll
 
 def latest_poll(channel):
     return Polls.objects.filter(channel=channel).latest('timestamp')
 
-def timestamped_poll(channel, timestamp):
-    return Polls.objects.filter(channel=channel, timestamp=timestamp)
+def timestamped_poll(timestamp):
+    return Polls.objects.filter(timestamp=timestamp)[0]
     
 def update_vote(poll, option, users):
     users = json.dumps(users)
@@ -208,7 +207,7 @@ def interactive_button(request):
     options = []
     votes = defaultdict(list)
     if payload["callback_id"] == "newOption":
-        poll = timestamped_poll(payload['channel']['id'], payload['state'])
+        poll = timestamped_poll(payload['state'])
         options.append(payload['submission']['new_option'])
         question = poll.question
         options = json.loads(poll.options)
@@ -225,7 +224,7 @@ def interactive_button(request):
             votes[payload["actions"][0]["value"]].remove("@" + payload['user']['name'])
         else:
             votes[payload['actions'][0]['value']].append("@" + payload["user"]["name"])
-        poll = timestamped_poll(payload['channel']['id'], payload['original_message']['ts'])
+        poll = timestamped_poll(payload['original_message']['ts'])
         update_vote(poll, payload['actions'][0]['value'], votes[payload['actions'][0]['value']])
     text = format_text(question, options, votes)
     attachments = format_attachments(question, options)
@@ -268,8 +267,6 @@ def poll(request):
         text = format_text(question, options, votes=defaultdict(list))
 
         attach_string = format_attachments(question, options)
-        print attach_string
-        print urllib.quote(attach_string)
         postMessage_url = "https://slack.com/api/chat.postMessage"
         postMessage_params = {
             "token": "xoxp-295024425040-295165594001-427015731286-44189cac96fe454bbfe6d1daabb584a1",
