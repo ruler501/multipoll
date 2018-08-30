@@ -25,8 +25,8 @@ class Polls(models.Model):
 class Votes(models.Model):
     vote_id = models.AutoField(primary_key=True)
     poll = models.ForeignKey(Polls)
-	option = models.CharField(max_length=100)
-	users = models.CharField(max_length=1000)
+    option = models.CharField(max_length=100)
+    users = models.CharField(max_length=1000)
 
 
 
