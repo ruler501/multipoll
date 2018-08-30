@@ -45,7 +45,8 @@ def parse_message(message):
     global name_cache
     options = []
     for opt in message['attachments'][0]['actions']:
-        options.append(opt['text'])
+        if opt['name'] != 'addMore':
+            options.append(opt['text'])
     
     votes = defaultdict(list)
     for i, line in enumerate(message['text'].split('\n')):
@@ -189,6 +190,7 @@ def create_dialog(payload):
         }
     }
     response_data = requests.post(methodUrl, params=methodParams)
+    print response_data.json()
         
     
 @csrf_exempt
