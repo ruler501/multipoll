@@ -170,7 +170,7 @@ def format_attachments(question, options):
         actions.append(attach)
     actions.append({ "name": "addMore", "text": "Add More", "type": "button", "value": "Add More" })
     attachments = []
-    for i in range(int(math.ceil(actions / 5.0))):
+    for i in range(int(math.ceil(len(actions) / 5.0))):
         attachment = { "text": "", "callback_id": "options", "attachment_type": "default", "actions": actions[5*i: 5*i + 5] }
         attachments.append(attachment)
     
