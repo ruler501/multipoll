@@ -173,7 +173,7 @@ def format_attachments(question, options):
     attachments = []
     for i in range(int(math.ceil(actions / 5.0))):
         attachment = { "text": "", "callback_id": "options", "attachment_type": "default", "actions": actions[5*i: 5*i + 5] }
-        attachments.append(attachment
+        attachments.append(attachment)
     
     return json.dumps(attachments)
 
