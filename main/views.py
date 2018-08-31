@@ -157,7 +157,7 @@ def format_text(question, options, votes):
     text = ""
     text = "*" + question + "*\n\n"
     for option in range(0, len(options)):
-        toAdd = '(' + len(votes[option]) + ") " + options[option]
+        toAdd = '(' + str(len(votes[option])) + ") " + options[option]
         toAdd += ', '.join(votes[options[option]])
         # Add count + condorcet score here
         text += unicode(toAdd + '\n')
@@ -168,8 +168,7 @@ def format_attachments(question, options):
     for option in options:
         attach = { "name": "option", "text": option, "type": "button", "value": option }
         actions.append(attach)
-    if len(options) < 10:
-        actions.append({ "name": "addMore", "text": "Add More", "type": "button", "value": "Add More" })
+    actions.append({ "name": "addMore", "text": "Add More", "type": "button", "value": "Add More" })
     attachments = []
     for i in range(int(math.ceil(actions / 5.0))):
         attachment = { "text": "", "callback_id": "options", "attachment_type": "default", "actions": actions[5*i: 5*i + 5] }
