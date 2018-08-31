@@ -47,9 +47,10 @@ name_cache = {}
 def parse_message(message):
     global name_cache
     options = []
-    for opt in message['attachments'][0]['actions']:
-        if opt['name'] != 'addMore':
-            options.append(opt['text'])
+    for attachment in message['attachments']:
+        for opt in attachment['actions']:
+            if opt['name'] != 'addMore':
+                options.append(opt['text'])
     
     votes = defaultdict(list)
     for i, line in enumerate(message['text'].split('\n')):
