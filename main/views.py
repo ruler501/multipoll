@@ -157,7 +157,7 @@ def format_text(question, options, votes):
     text = ""
     text = "*" + question + "*\n\n"
     for option in range(0, len(options)):
-        toAdd = '(' + str(len(votes[option])) + ") " + options[option]
+        toAdd = '(' + str(len(votes[options[option]])) + ") " + options[option]
         toAdd += ', '.join(votes[options[option]])
         # Add count + condorcet score here
         text += unicode(toAdd + '\n')
