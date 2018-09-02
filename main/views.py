@@ -15,9 +15,10 @@ import json
 import math
 import urllib
 
-# Create your views here.
 
-numbers = ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "keycap_ten"]
+client_id = "4676884434.375651972439"
+client_secret = os.environ.get("SLACK_CLIENT_SECRET", "")
+# Create your views here.
 
 def add_poll(timestamp, channel, question, options):
     poll = Polls(timestamp=timestamp, channel=channel, question=question, options=json.dumps(options))
@@ -67,7 +68,7 @@ def parse_message(message):
             else:
                 methodUrl = 'https://slack.com/api/users.info'
                 methodParams = {
-                    "token": "xoxp-295024425040-295165594001-427015731286-44189cac96fe454bbfe6d1daabb584a1",
+                    "token": client_secret,
                     "user": name
                 }
                 response_data = requests.get(methodUrl, params=methodParams)
@@ -89,10 +90,6 @@ def index(request):
     context = {"state": state}
     # TODO: track and verify state in cookie
     return render(request, "main/index.html", context)
-
-
-client_id = "4676884434.375651972439"
-client_secret = os.environ.get("SLACK_CLIENT_SECRET", "xoxp-295024425040-295165594001-427015731286-44189cac96fe454bbfe6d1daabb584a1")
 
 
 def oauthcallback(request):
@@ -139,7 +136,7 @@ def oauthcallback(request):
 
 
 def check_token(request):
-    verifier = os.environ.get("SLACK_POLL_VERIFIER", "gcoZ4rfrvaEeCCC6tcYByUVX")
+    verifier = os.environ.get("SLACK_POLL_VERIFIER", "")
     if request.method != "POST":
         return HttpResponseBadRequest("400 Request should be of type POST.")
     sent_token = ""
@@ -181,7 +178,7 @@ def format_attachments(question, options):
 def create_dialog(payload):
     methodUrl = 'https://slack.com/api/dialog.open'
     methodParams = {
-        "token": "xoxp-295024425040-295165594001-427015731286-44189cac96fe454bbfe6d1daabb584a1",
+        "token": client_secret,
         "trigger_id": payload['trigger_id'],
         "dialog": {
             "title": "Add an option",
@@ -240,7 +237,7 @@ def interactive_button(request):
     attachments = format_attachments(question, options)
     methodUrl = 'https://slack.com/api/chat.update'
     updateMessage = {
-        "token": "xoxp-295024425040-295165594001-427015731286-44189cac96fe454bbfe6d1daabb584a1",
+        "token": client_secret,
         "channel": payload['channel']['id'],
         "ts": ts,
         "text": text,
@@ -279,7 +276,7 @@ def poll(request):
         attach_string = format_attachments(question, options)
         postMessage_url = "https://slack.com/api/chat.postMessage"
         postMessage_params = {
-            "token": "xoxp-295024425040-295165594001-427015731286-44189cac96fe454bbfe6d1daabb584a1",
+            "token": client_secret,
             "text": text,
             "channel": channel,
             "icon_url": "https://simplepoll.rocks/static/main/simplepolllogo-colors.png",
