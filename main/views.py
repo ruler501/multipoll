@@ -57,7 +57,7 @@ def parse_message(message):
     for i, line in enumerate(message['text'].split('\n')):
         if i < 2 or i - 2 >= len(options):
             continue
-		line = line.decode("utf-8")
+        line = line.decode("utf-8")
         print i, line
         names = options[i-2].join(line.split(options[i-2])[1:]).replace('<@', '').replace('>', '').split(', ')
         if '' in names:
