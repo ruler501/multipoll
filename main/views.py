@@ -311,6 +311,22 @@ def event_handling(request):
     if request.POST["type"] == "url_verification":
         return HttpResponse(request.POST["challenge"])
 
+    def post_message(channel, message, attachments):
+        post_message_url = "https://slack.com/api/chat.postMessage"
+        post_message_params = {
+            "token": client_secret,
+            "text": message,
+            "channel": channel,
+            "icon_url": "https://simplepoll.rocks/static/main/simplepolllogo-colors.png",
+            "attachments": attachments
+            }
+        text_response = requests.post(post_message_url, params=post_message_params)
+        print 'response text', text_response.json()
+
+    if request.POST["type"] == "event_callback":
+        if request.POST["event"]["text"].lower() == "create distributed poll":
+            post_message(request.POST["event"]["channel"], "Acknowledged", None)
+
     return HttpResponse()
 
 
