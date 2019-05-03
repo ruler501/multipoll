@@ -23,4 +23,5 @@ urlpatterns = [
     url(r'^interactive_button/', views.interactive_button, name="interactive_button"),
     url(r'^poll/', views.poll, name="poll"),
     url(r'^privacy-policy/', views.privacy_policy, name="privacy-policy"),
+    url(r'^event_handling/', views.event_handling, name="event_handling"),
 ]
