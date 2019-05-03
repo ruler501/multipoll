@@ -152,7 +152,7 @@ def check_token(request):
         sent_token = json.loads(request.POST["payload"])["token"]
     else:
         return HttpResponseBadRequest("400 Request is not signed!")
-
+    print(sent_token)
     if verifier != sent_token:
         return HttpResponseBadRequest("400 Request is not signed correctly!")
     return None
@@ -308,6 +308,8 @@ def event_handling(request):
 
     if request.POST["type"] == "url_verification":
         return HttpResponse(request.POST["challenge"])
+
+    return HttpResponse()
 
 
 def privacy_policy(request):
