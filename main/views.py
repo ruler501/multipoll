@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.http import HttpResponse, HttpResponseBadRequest
 import requests
-from main.models import Teams, Polls, Votes
+from main.models import Teams, Polls, Votes, DistributedPoll, Block, Question, Response
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
 from collections import defaultdict
@@ -201,8 +201,47 @@ def create_dialog(payload):
     print "Params", methodParams
     response_data = requests.post(methodUrl, params=methodParams)
     print "Dialog response", response_data.json()
-        
-    
+
+
+def load_distributed_poll_file(lines, poll):
+    blocks = []
+    questions = []
+    current_block = None
+    current_question = None
+    current_options = []
+    on_options = False
+    for line in lines:
+        line = line.strip()
+        if line.startswith("[[Block:"):
+            if current_block is not None:
+                blocks.append(current_block)
+                on_options = False
+                if current_question is not None:
+                    questions.append(current_question)
+                current_question = None
+                current_options = []
+            line = line[8:-2]
+            current_block = Block()
+            current_block.name = line
+            current_block.poll = poll
+        elif len(line) == 0:
+            if on_options:
+                current_question.options = '\t'.join(current_options)
+                questions.append(current_question)
+                current_question = None
+                current_options = []
+            elif current_question is not None:
+                on_options = True
+        elif current_question is None:
+            current_question = Question()
+            current_question.question = line
+            current_question.block = current_block
+        elif on_options:
+            current_options.append(line)
+    if current_block is not None:
+        blocks.append(current_block)
+
+    return blocks, questions
 @csrf_exempt
 def interactive_button(request):
     errorcode = check_token(request)
@@ -328,7 +367,14 @@ def event_handling(request):
             post_message(request.POST["event"]["channel"], "Acknowledged", None)
         if 'files' in request.POST["event"] and len(request.POST["event"]["files"]) > 0:
             response = requests.get(request.POST["event"]["files"][0]["url_private_download"])
-            print response.readlines()
+            lines = response.readlines()
+            print lines
+            poll = DistributedPoll()
+            poll.name = request.POST["event"]["files"][0]["title"]
+            if poll.name.endswith('.txt'):
+                poll.name = poll.name[:-4]
+            blocks, questions = load_distributed_poll_file(lines, poll)
+
 
     return HttpResponse()
 

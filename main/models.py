@@ -1,8 +1,6 @@
 from django.db import models
 import json
 
-# Create your models here.
-
 
 class Teams(models.Model):
     access_token = models.CharField(max_length=1000)
@@ -32,6 +30,21 @@ class Votes(models.Model):
 
 
 class DistributedPoll(models.Model):
-# def get_votes(poll):
-#   options = Polls.objects.get(poll_id=poll).json()
-#   votes = Votes.objects.filter(poll_id=poll)
+    name = models.CharField(max_length=50, unique=True)
+
+
+class Block(models.Model):
+    name = models.CharField(max_length=100)
+    poll = models.ForeignKey(DistributedPoll)
+
+
+class Question(models.Model):
+    block = models.ForeignKey(Block)
+    question = models.CharField(max_length=1000)
+    options = models.CharField(max_length=1000)
+
+
+class Response(models.Model):
+    question = models.ForeignKey(Question)
+    option = models.CharField(max_length=100)
+    user = models.CharField(max_length=100)
