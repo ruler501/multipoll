@@ -303,6 +303,7 @@ def poll(request):
 def event_handling(request):
     print "Request items:", request.POST.items()
     print "Request:", request.body
+    request.POST = json.loads(request.body)
     error_code = check_token(request)
     if error_code is not None:
         return error_code
