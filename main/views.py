@@ -326,6 +326,9 @@ def event_handling(request):
     if request.POST["type"] == "event_callback":
         if request.POST["event"]["text"].lower() == "create distributed poll":
             post_message(request.POST["event"]["channel"], "Acknowledged", None)
+        if 'files' in request.POST["event"] and len(request.POST["event"]["files"]) > 0:
+            response = requests.get(request.POST["event"]["files"][0]["url_private_download"])
+            print response.readlines()
 
     return HttpResponse()
 

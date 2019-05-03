@@ -16,11 +16,13 @@ class Teams(models.Model):
     def __unicode__(self):
         return str(self.unique_uuid)
 
+
 class Polls(models.Model):
     timestamp = models.CharField(max_length=100, primary_key=True, unique=True)
     channel = models.CharField(max_length=1000)
     question = models.CharField(max_length=1000)
     options = models.CharField(max_length=1000)
+
 
 class Votes(models.Model):
     vote_id = models.AutoField(primary_key=True)
@@ -29,7 +31,7 @@ class Votes(models.Model):
     users = models.CharField(max_length=1000)
 
 
-
+class DistributedPoll(models.Model):
 # def get_votes(poll):
 #   options = Polls.objects.get(poll_id=poll).json()
 #   votes = Votes.objects.filter(poll_id=poll)
