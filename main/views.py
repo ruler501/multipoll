@@ -292,16 +292,22 @@ def poll(request):
         print 'response text', text_response.json()
         return text_response.json()["ts"]  # return message timestamp
 
-    class ChannelDoesNotExist(Exception):
-        def __init__(self, *args, **kwargs):
-            Exception.__init__(self, *args, **kwargs)
-
-
     timestamp = sendPollMessage()
     print timestamp
     print add_poll(timestamp, channel, question, options).timestamp
 
     return HttpResponse()  # Empty 200 HTTP response, to not display any additional content in Slack
+
+
+@csrf_exempt
+def event_handling(request):
+    error_code = check_token(request)
+    if error_code is not None:
+        return error_code
+    print request.POST.items()
+
+    if request.POST["type"] == "url_verification":
+        return HttpResponse(request.POST["challenge"])
 
 
 def privacy_policy(request):
