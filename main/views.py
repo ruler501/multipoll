@@ -301,10 +301,20 @@ def interactive_button(request):
             question_id = payload['actions'][0]['name'][3:]
             questions = Question.objects.filter(id=question_id)
             if len(questions) != 0:
+                users = User.objects.filter(id=payload['user']['name'])
+                user = None
+                if len(users) == 0:
+                    user = User()
+                    user.name = payload['user']['name']
+                    user.id = payload['user']['name']
+                    user.save()
+                else:
+                    user = users[0]
                 question = questions[0]
                 response = Response()
                 response.option = payload['actions'][0]['text']
                 response.question = question
+                response.user = user
                 response.save()
                 options = question.options.split('\t')
                 attachments = format_attachments(options, "qo_" + question.id, False)
@@ -319,6 +329,8 @@ def interactive_button(request):
                     "attachments": attachments,
                     "parse": "full"
                 }
+                text_response = requests.post(methodUrl, params=updateMessage)
+                print 'response text', text_response.json()
 
     return HttpResponse()
 
