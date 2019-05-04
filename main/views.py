@@ -398,7 +398,7 @@ def event_handling(request):
         if request.POST["event"]["text"].lower() == "create distributed poll":
             post_message(request.POST["event"]["channel"], "Acknowledged", None)
         if 'files' in request.POST["event"] and len(request.POST["event"]["files"]) > 0:
-            response = requests.get(request.POST["event"]["files"][0]["url_private_download"])
+            response = requests.get(request.POST["event"]["files"][0]["url_private_download"], headers={"Authorization": "Bearer " + client_secret})
             file_like_obj = io.StringIO(response.text)
             lines = file_like_obj.readlines()
             poll, _, _ = load_distributed_poll_file(request.POST["event"]["files"][0]["title"], lines)
