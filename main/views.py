@@ -318,7 +318,7 @@ def interactive_button(request):
         poll.options = json.dumps(options)
         poll.save()
     elif payload['callback_id'] == "options":
-        elif payload["actions"][0]["name"] == "addMore":
+        if payload["actions"][0]["name"] == "addMore":
             ts = payload['original_message']['ts']
             question, options, votes = parse_message(payload['original_message'])
             create_dialog(payload)
