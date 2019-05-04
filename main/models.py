@@ -42,7 +42,7 @@ class Question(models.Model):
     block = models.ForeignKey(Block)
     question = models.CharField(max_length=1000)
     options = models.CharField(max_length=1000)
-    id = models.CharField(max_length=8, null=True, blank=True, primary_key=True)
+    id = models.CharField(max_length=8, default=None, blank=True, primary_key=True)
 
     # Sample of an ID generator - could be any string/number generator
     # For a 6-char field, this one yields 2.1 billion unique IDs
@@ -60,7 +60,7 @@ class Question(models.Model):
 
 class User(models.Model):
     name = models.CharField(max_length=100)
-    id = models.CharField(max_length=50, unique=True)
+    id = models.CharField(max_length=50, primary_key=True)
 
 
 class Response(models.Model):
