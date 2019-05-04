@@ -53,7 +53,7 @@ class Question(models.Model):
         if not self.id:
             # Generate ID once, then check the db. If exists, keep trying.
             self.id = self.id_generator()
-            while Question.objects.filter(urlhash=self.urlhash).exists():
+            while Question.objects.filter(id=self.id).exists():
                 self.id = self.id_generator()
         super(Question, self).save(*args, **kwargs)
 

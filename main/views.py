@@ -97,56 +97,6 @@ def parse_message(message):
     return question, options, votes
 
 
-def index(request):
-    state = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(36))
-    context = {"state": state}
-    # TODO: track and verify state in cookie
-    return render(request, "main/index.html", context)
-
-
-def oauthcallback(request):
-    if "error" in request.GET:
-        status = "Oauth authentication failed. You aborted the Authentication process. Redirecting back to the homepage..."
-        context = {"status": status}
-        return render(request, "main/oauthcallback.html", context)
-
-    code = request.GET["code"]
-
-    url = "https://slack.com/api/oauth.access"
-    data = {
-        "client_id": client_id,
-        "client_secret": client_secret,
-        "code": code,
-    }
-
-    r = requests.get(url, params=data)
-    query_result = r.json()
-    if query_result["ok"]:
-        access_token = query_result["access_token"]
-        team_name = query_result["team_name"]
-        team_id = query_result["team_id"]
-
-        try:
-            team = Teams.objects.get(team_id=team_id)
-        except ObjectDoesNotExist:
-            # new Team (yay!)
-            new_team = Teams(access_token=access_token, team_name=team_name, team_id=team_id, last_changed=timezone.now())
-            new_team.save()
-        else:
-            team.access_token = access_token
-            team.team_name = team_name
-            team.save()
-
-    else:
-        status = "Oauth authentication failed. Redirecting back to the homepage..."
-        context = {"status": status}
-        return render(request, "main/oauthcallback.html", context)
-
-    status = "Oauth authentication successful! You can now start using /poll. Redirecting back to the homepage..."
-    context = {"status": status}
-    return render(request, "main/oauthcallback.html", context)
-
-
 def check_token(request):
     verifier = os.environ.get("SLACK_POLL_VERIFIER", "")
     if request.method != "POST":
@@ -473,6 +423,3 @@ def event_responses(_, event_name):
     responses = {key: collapse_lists(value) for key, value in responses.items()}
     results = [','.join([users[key]] + values) for id, values in responses]
     return HttpResponse('\n'.join(results))
-
-def privacy_policy(request):
-    return render(request, "main/privacy-policy.html")
