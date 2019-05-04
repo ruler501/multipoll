@@ -202,8 +202,10 @@ def load_distributed_poll_file(name, lines):
     if current_block is not None:
         blocks.append(current_block)
     poll.save()
+    print(blocks)
     for block in blocks:
         block.save()
+    print(questions)
     for question in questions:
         question.save()
     return poll, blocks, questions
