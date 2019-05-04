@@ -434,14 +434,17 @@ def poll_responses(_, poll_name):
         questions += block.question_set.all()
     responses = defaultdict(list)
     users = {}
+    headers = ["Username"]
     for i, question in enumerate(questions):
+        headers.append(question.question)
         for response in question.response_set.all():
             response_list = ['' for _ in questions]
             response_list[i] = response.option
             responses[response.user.id].append(response_list)
             users[response.user.id] = response.user.name
     responses = {key: collapse_lists(value) for key, value in responses.items()}
-    results = [','.join([users[key]] + values) for id, values in responses.items()]
+    results = ['\t'.join([users[id]] + values) for id, values in responses.items()]
+    results = ['\t'.join(headers)] + results
     return HttpResponse('\n'.join(results))
 
 
