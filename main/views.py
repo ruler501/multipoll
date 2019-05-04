@@ -218,11 +218,13 @@ def collapse_lists(lists):
     for l in lists:
         for i, item in enumerate(l):
             for res in result:
-                if res[i] == '':
+                if res[i] == '' and res[0] == l[0]:
                     res[i] = item
                     break
             else:
                 result.append(['' for _ in lists[0]])
+                result[-1][0] = l[0]
+                result[-1][i] = item
     return result
 
 
