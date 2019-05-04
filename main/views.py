@@ -242,7 +242,7 @@ def post_message(channel, message, attachments):
 def post_question(channel, question):
     options = question.options.split('\t')
     attachments = format_attachments(options, "qo_"+question.id, False)
-    text = format_text(question.question, options, {})
+    text = format_text(question.question, options, defaultdict(list))
     post_message(channel, text, attachments)
 
 

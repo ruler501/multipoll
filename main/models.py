@@ -25,7 +25,7 @@ class Polls(models.Model):
 
 class Votes(models.Model):
     vote_id = models.AutoField(primary_key=True)
-    poll = models.ForeignKey(Polls)
+    poll = models.ForeignKey(Polls, on_delete=models.CASCADE)
     option = models.CharField(max_length=100)
     users = models.CharField(max_length=1000)
 
@@ -36,11 +36,11 @@ class DistributedPoll(models.Model):
 
 class Block(models.Model):
     name = models.CharField(max_length=100)
-    poll = models.ForeignKey(DistributedPoll)
+    poll = models.ForeignKey(DistributedPoll, on_delete=models.CASCADE)
 
 
 class Question(models.Model):
-    block = models.ForeignKey(Block)
+    block = models.ForeignKey(Block, on_delete=models.CASCADE)
     question = models.CharField(max_length=1000)
     options = models.CharField(max_length=1000)
     id = models.CharField(max_length=8, default=None, blank=True, primary_key=True)
@@ -65,6 +65,6 @@ class User(models.Model):
 
 
 class Response(models.Model):
-    question = models.ForeignKey(Question)
+    question = models.ForeignKey(Question, on_delete=models.CASCADE)
     option = models.CharField(max_length=100)
-    user = models.ForeignKey(User)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
