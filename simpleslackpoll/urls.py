@@ -20,5 +20,6 @@ urlpatterns = [
     url(r'^interactive_button/', views.interactive_button, name="interactive_button"),
     url(r'^poll/', views.poll, name="poll"),
     url(r'^event_handling/', views.event_handling, name="event_handling"),
-    url(r'^(?P<event_name>\w+)/responses$', views.event_responses,)
+    url(r'^(?P<poll_name>\w+)/responses$', views.poll_responses,)
+    url(r'^(?P<poll_name>\w+)/', views.delete_distributedpoll)
 ]

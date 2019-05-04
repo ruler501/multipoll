@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404
 from django.http import HttpResponse, HttpResponseBadRequest
 import requests
 from main.models import Teams, Polls, Votes, DistributedPoll, Block, Question, Response
@@ -422,9 +422,8 @@ def event_handling(request):
 
 
 @csrf_exempt
-def event_responses(_, event_name):
-    print "Event Name:", event_name
-    poll = DistributedPoll.objects.filter(name=event_name)
+def poll_responses(_, poll_name):
+    poll = DistributedPoll.objects.filter(name=poll_name)
     blocks = poll.block_set.all()
     questions = []
     for block in blocks:
@@ -440,3 +439,15 @@ def event_responses(_, event_name):
     responses = {key: collapse_lists(value) for key, value in responses.items()}
     results = [','.join([users[key]] + values) for id, values in responses]
     return HttpResponse('\n'.join(results))
+
+
+@csrf_exempt
+def delete_distributedpoll(request, poll_name):
+    if request.method != "DELETE":
+        return HttpResponseBadRequest()
+
+    poll = get_object_or_404(DistributedPoll, name=poll_name)
+
+    poll.delete()
+
+    return HttpResponse()
