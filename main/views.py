@@ -17,7 +17,28 @@ from django.views.decorators.csrf import csrf_exempt
 
 from main.models import Polls, Votes, DistributedPoll, Block, Question, Response, User
 
+
 logger = logging.getLogger(__name__)
+
+
+def set_log_level(key='SIMPLEPOLL_LOGLEVEL', default='INFO'):
+    log_level_name = os.environ.get(key, default)
+    log_levels = {
+        'NOTSET': logging.NOTSET,
+        'DEBUG': logging.DEBUG,
+        'INFO': logging.INFO,
+        'WARNING': logging.WARNING,
+        'ERROR': logging.ERROR,
+        'CRITICAL': logging.CRITICAL
+    }
+    try:
+        logger.setLevel(log_levels[log_level_name])
+    except KeyError:
+        logger.setLevel(logging.NOTSET)
+        logger.error("Could not find the appropriate log level", exc_info=True)
+
+
+set_log_level()
 
 client_id = "4676884434.375651972439"
 client_secret = os.environ.get("SLACK_CLIENT_SECRET", "")
@@ -388,8 +409,8 @@ def event_handling(request):
             try:
                 poll, _, _ = load_distributed_poll_file(file_response['file']["title"], lines)
                 post_message(request.POST["event"]["channel_id"], "Distributed Poll Created: " + poll.name, None)
-            except IntegrityError as e:
-                logger.info("Poll already existed. Exception: {}", e)
+            except IntegrityError:
+                logger.info("Poll already existed.", exc_info=True)
                 post_message(request.POST["event"]["channel_id"],
                              "Could not create distributed poll a poll with name \""
                              + file_response['file']['title'] + "\" already exists.", None)
