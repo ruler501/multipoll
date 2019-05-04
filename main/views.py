@@ -318,7 +318,9 @@ def interactive_button(request):
                 response.save()
                 options = question.options.split('\t')
                 attachments = format_attachments(options, "qo_" + question.id, False)
-                text = format_text(question.question, options, {response.option: ['@' + payload['user']['name']]})
+                votes = defaultdict(list)
+                votes[response.option] = payload['user']['name']
+                text = format_text(question.question, options, votes)
                 ts = payload['original_message']['ts']
                 methodUrl = 'https://slack.com/api/chat.update'
                 updateMessage = {
