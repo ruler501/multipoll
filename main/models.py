@@ -1,5 +1,6 @@
 import random
 import string
+from typing import Dict, List
 
 from django.db import models
 
@@ -12,9 +13,6 @@ class Teams(models.Model):
     incoming_webhook_configuration_url = models.CharField(max_length=1000)
     last_changed = models.DateTimeField(auto_now=True, auto_now_add=False)
     created = models.DateTimeField(auto_now=False, auto_now_add=True, editable=False)
-
-    def __unicode__(self):
-        return str(self.unique_uuid)
 
 
 class Polls(models.Model):
@@ -49,10 +47,11 @@ class Question(models.Model):
     # Code courtesy of https://stackoverflow.com/a/37359808
     # Sample of an ID generator - could be any string/number generator
     # For a 6-char field, this one yields 2.1 billion unique IDs
-    def id_generator(self, size=8, chars=string.ascii_lowercase):
+    @staticmethod
+    def id_generator(size: int = 8, chars: str = string.ascii_lowercase) -> str:
         return ''.join(random.choice(chars) for _ in range(size))
 
-    def save(self, *args, **kwargs):
+    def save(self: "Question", *args: List, **kwargs: Dict) -> None:
         if not self.id:
             # Generate ID once, then check the db. If exists, keep trying.
             self.id = self.id_generator()

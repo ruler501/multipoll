@@ -5,11 +5,12 @@ import math
 import os
 import random
 from collections import defaultdict
+from typing import Dict, List, Optional, Tuple
 
 import requests
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError
-from django.http import HttpResponse, HttpResponseBadRequest
+from django.http import HttpRequest, HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 
@@ -18,7 +19,7 @@ from main.models import Block, DistributedPoll, Polls, Question, Response, User,
 logger = logging.getLogger(__name__)
 
 
-def set_log_level(key='SIMPLEPOLL_LOGLEVEL', default=logging.INFO):
+def set_log_level(key: str = 'SIMPLEPOLL_LOGLEVEL', default: int = logging.INFO) -> None:
     default_string = logging.getLevelName(default)
     log_level_name = os.environ.get(key, default_string)
     log_levels = {
@@ -26,7 +27,9 @@ def set_log_level(key='SIMPLEPOLL_LOGLEVEL', default=logging.INFO):
         'DEBUG': logging.DEBUG,
         'INFO': logging.INFO,
         'WARNING': logging.WARNING,
+        'WARN': logging.WARN,
         'ERROR': logging.ERROR,
+        'FATAL': logging.FATAL,
         'CRITICAL': logging.CRITICAL
     }
     try:
@@ -45,47 +48,43 @@ client_id = "4676884434.375651972439"
 client_secret = os.environ.get("SLACK_CLIENT_SECRET", "")
 
 
-def add_poll(timestamp, channel, question, options):
+def add_poll(timestamp: str, channel: str, question: str, options: List[str]) -> Polls:
     poll = Polls(timestamp=timestamp, channel=channel, question=question, options=json.dumps(options))
     poll.save()
     return poll
 
 
-def latest_poll(channel):
-    return Polls.objects.filter(channel=channel).latest('timestamp')
-
-
-def timestamped_poll(timestamp):
+def timestamped_poll(timestamp: str) -> Polls:
     return Polls.objects.filter(timestamp=timestamp)[0]
 
 
-def update_vote(poll, option, users):
-    users = json.dumps(users)
+def update_vote(poll: Polls, option: str, users: List[str]) -> Votes:
+    users_str = json.dumps(users)
     try:
         vote = Votes.objects.get(poll=poll, option=option)
-        vote.users = users
+        vote.users = users_str
     except ObjectDoesNotExist:
-        vote = Votes(poll=poll, option=option, users=users)
+        vote = Votes(poll=poll, option=option, users=users_str)
     vote.save()
     return vote
 
 
-def get_all_votes(poll):
-    return Votes.objects.filter(poll=poll)
+def get_all_votes(poll: Polls) -> List[Votes]:
+    return poll.votes_set.all()
 
 
-name_cache = {}
+name_cache: Dict[str, str] = {}
 
 
-def parse_message(message):
+def parse_message(message: Dict) -> Tuple[str, List[str], Dict[str, List[str]]]:
     global name_cache
-    options = []
+    options: List[str] = []
     for attachment in message['attachments']:
         for opt in attachment['actions']:
             if opt['name'] != 'addMore':
                 options.append(opt['text'])
 
-    votes = defaultdict(list)
+    votes: Dict[str, List[str]] = defaultdict(list)
     for i, line in enumerate(message['text'].split('\n')):
         if i < 2 or i - 2 >= len(options):
             continue
@@ -121,22 +120,7 @@ def parse_message(message):
     return question, options, votes
 
 
-def check_token(request):
-    verifier = os.environ.get("SLACK_POLL_VERIFIER", "")
-    if request.method != "POST":
-        return HttpResponseBadRequest("400 Request should be of type POST.")
-    if "token" in request.POST:
-        sent_token = request.POST["token"]
-    elif "payload" in request.POST and "token" in json.loads(request.POST["payload"]):
-        sent_token = json.loads(request.POST["payload"])["token"]
-    else:
-        return HttpResponseBadRequest("400 Request is not signed!")
-    if verifier != sent_token:
-        return HttpResponseBadRequest("400 Request is not signed correctly!")
-    return None
-
-
-def format_text(question, options, votes):
+def format_text(question: str, options: List[str], votes: Dict[str, List[str]]) -> str:
     text = "*" + question + "*\n\n"
     for option in range(0, len(options)):
         to_add = '(' + str(len(votes[options[option]])) + ") " + options[option]
@@ -146,7 +130,7 @@ def format_text(question, options, votes):
     return text
 
 
-def format_attachments(options, options_name="option", include_add_more=True):
+def format_attachments(options: List[str], options_name: str = "option", include_add_more: bool = True) -> str:
     actions = []
     for option in options:
         attach = {"name": options_name, "text": option, "type": "button", "value": option}
@@ -162,7 +146,7 @@ def format_attachments(options, options_name="option", include_add_more=True):
     return json.dumps(attachments)
 
 
-def create_dialog(payload):
+def create_dialog(payload: Dict) -> None:
     method_url = 'https://slack.com/api/dialog.open'
     method_params = {
         "token": client_secret,
@@ -184,17 +168,17 @@ def create_dialog(payload):
     logger.info("Dialog Response: %s", response_data.json())
 
 
-def load_distributed_poll_file(name, lines):
+def load_distributed_poll_file(name: str, lines: List[str]) -> Tuple[DistributedPoll, List[Block], List[Question]]:
     poll = DistributedPoll()
     poll.name = name
     if poll.name.endswith('.txt'):
         poll.name = poll.name[:-4]
     poll.save()
-    blocks = []
-    questions = []
-    current_block = None
-    current_question = None
-    current_options = []
+    blocks: List[Block] = []
+    questions: List[Question] = []
+    current_block: Optional[Block] = None
+    current_question: Optional[Question] = None
+    current_options: List[str] = []
     on_options = False
     for line in lines:
         line = line.strip()
@@ -203,7 +187,7 @@ def load_distributed_poll_file(name, lines):
                 blocks.append(current_block)
                 on_options = False
                 if current_question is not None:
-                    current_question.save()
+                    current_question.save()  # noqa: T484
                     questions.append(current_question)
                 current_question = None
                 current_options = []
@@ -215,9 +199,9 @@ def load_distributed_poll_file(name, lines):
             current_block.save()
         elif len(line) == 0:
             if on_options:
-                current_question.options = '\t'.join(current_options)
+                current_question.options = '\t'.join(current_options)  # noqa: T484
                 questions.append(current_question)
-                current_question.save()
+                current_question.save()  # noqa: T484
                 current_question = None
                 current_options = []
                 on_options = False
@@ -236,7 +220,7 @@ def load_distributed_poll_file(name, lines):
     return poll, blocks, questions
 
 
-def collapse_lists(lists):
+def collapse_lists(lists: List[List[str]]) -> List[List[str]]:
     if len(lists) == 0:
         return lists
     result = [['' for _ in lists[0]]]
@@ -253,7 +237,7 @@ def collapse_lists(lists):
     return result
 
 
-def post_message(channel, message, attachments):
+def post_message(channel: str, message: str, attachments: Optional[str]) -> str:
     post_message_url = "https://slack.com/api/chat.postMessage"
     post_message_params = {
         "token": client_secret,
@@ -263,12 +247,12 @@ def post_message(channel, message, attachments):
         "attachments": attachments
     }
     text_response = requests.post(post_message_url, params=post_message_params)
-    text_response = text_response.json()
+    text_response_dict = text_response.json()
     logger.info('Response Text: %s', text_response)
-    return text_response['ts']
+    return text_response_dict['ts']
 
 
-def update_message(channel, ts, text, attachments):
+def update_message(channel: str, ts: str, text: str, attachments: str) -> None:
     method_url = 'https://slack.com/api/chat.update'
     method_params = {
         "token": client_secret,
@@ -282,27 +266,40 @@ def update_message(channel, ts, text, attachments):
     logger.info("Response Text: %s", text_response.json())
 
 
-def post_question(channel, question):
+def post_question(channel: str, question: Question) -> None:
     options = question.options.split('\t')
     attachments = format_attachments(options, "qo_" + question.id, False)
     text = format_text(question.question, options, defaultdict(list))
     post_message(channel, text, attachments)
 
 
+def check_token(request: HttpRequest) -> HttpResponse:
+    verifier = os.environ.get("SLACK_POLL_VERIFIER", "")
+    if request.method != "POST":
+        return HttpResponseBadRequest("400 Request should be of type POST.")
+    if "token" in request.POST:
+        sent_token = request.POST["token"]
+    elif "payload" in request.POST and "token" in json.loads(request.POST["payload"]):
+        sent_token = json.loads(request.POST["payload"])["token"]
+    else:
+        return HttpResponseBadRequest("400 Request is not signed!")
+    if verifier != sent_token:
+        return HttpResponseBadRequest("400 Request is not signed correctly!")
+    return None
+
+
 @csrf_exempt
-def interactive_button(request):
+def interactive_button(request: HttpRequest) -> HttpResponse:
     error_code = check_token(request)
     if error_code is not None:
         return error_code
     payload = json.loads(request.POST['payload'])
     logger.info(str(payload))
-    question = ""
-    options = []
-    votes = defaultdict(list)
     ts = ""
     if payload["callback_id"] == "newOption":
+        votes: Dict[str, List[str]] = defaultdict(list)
         poll = timestamped_poll(payload['state'])
-        options = json.loads(poll.options)
+        options: List[str] = json.loads(poll.options)
         votes_obj = get_all_votes(poll)
         for vote in votes_obj:
             votes[vote.option] = json.loads(vote.users)
@@ -310,6 +307,9 @@ def interactive_button(request):
         poll.options = json.dumps(options)
         poll.save()
     elif payload['callback_id'] == "options":
+        question = ""
+        options = []
+        votes = defaultdict(list)
         if payload["actions"][0]["name"] == "addMore":
             ts = payload['original_message']['ts']
             question, options, votes = parse_message(payload['original_message'])
@@ -340,17 +340,17 @@ def interactive_button(request):
                     user.save()
                 else:
                     user = users[0]
-                question = questions[0]
+                question_obj = questions[0]
                 response = Response()
                 response.option = payload['actions'][0]['value']
-                response.question = question
+                response.question = question_obj
                 response.user = user
                 response.save()
-                options = question.options.split('\t')
-                attachments = format_attachments(options, "qo_" + question.id, False)
+                options = question_obj.options.split('\t')
+                attachments = format_attachments(options, "qo_" + question_obj.id, False)
                 votes = defaultdict(list)
                 votes[response.option] = [payload['user']['name']]
-                text = format_text(question.question, options, votes)
+                text = format_text(question_obj.question, options, votes)
                 ts = payload['original_message']['ts']
                 update_message(payload['channel']['id'], ts, text, attachments)
 
@@ -358,7 +358,7 @@ def interactive_button(request):
 
 
 @csrf_exempt
-def slash_poll(request):
+def slash_poll(request: HttpRequest) -> HttpResponse:
     error_code = check_token(request)
     if error_code is not None:
         return error_code
@@ -388,7 +388,7 @@ def slash_poll(request):
 
 
 @csrf_exempt
-def event_handling(request):
+def event_handling(request: HttpRequest) -> HttpResponse:
     logger.info("Request: %s", request.body)
     request.POST = json.loads(request.body)
     error_code = check_token(request)
@@ -401,20 +401,20 @@ def event_handling(request):
         if request.POST["event"]["type"] == "file_shared":
             file_id = request.POST["event"]["file"]["id"]
             file_response = requests.get("https://slack.com/api/files.info?token=" + client_secret + "&file=" + file_id)
-            file_response = file_response.json()
-            logger.info("File Response: %s", file_response)
-            response = requests.get(file_response['file']['url_private_download'],
+            file_response_dict: Dict = file_response.json()
+            logger.info("File Response: %s", file_response_dict)
+            response = requests.get(file_response_dict['file']['url_private_download'],
                                     headers={"Authorization": "Bearer " + client_secret})
             file_like_obj = io.StringIO(response.text)
             lines = file_like_obj.readlines()
             try:
-                poll, _, _ = load_distributed_poll_file(file_response['file']["title"], lines)
+                poll, _, _ = load_distributed_poll_file(file_response_dict['file']["title"], lines)
                 post_message(request.POST["event"]["channel_id"], "Distributed Poll Created: " + poll.name, None)
             except IntegrityError:
                 logger.info("Poll already existed.", exc_info=True)
                 post_message(request.POST["event"]["channel_id"],
                              "Could not create distributed poll a poll with name \""
-                             + file_response['file']['title'] + "\" already exists.", None)
+                             + file_response_dict['file']['title'] + "\" already exists.", None)
         elif request.POST["event"]["type"] == 'message' and request.POST["event"]["text"].lower().startswith("dpoll"):
             name = ' '.join(request.POST["event"]["text"].split(' ')[1:])
             polls = DistributedPoll.objects.filter(name=name)
@@ -435,13 +435,16 @@ def event_handling(request):
 
 
 @csrf_exempt
-def poll_responses(_, poll_name):
+def poll_responses(request: HttpRequest, poll_name: str) -> HttpResponse:
+    if request.method != "GET":
+        return HttpResponseBadRequest()
+
     poll = get_object_or_404(DistributedPoll, name=poll_name)
     blocks = poll.block_set.all()
-    questions = []
+    questions: List[Question] = []
     for block in blocks:
         questions += block.question_set.all()
-    responses = defaultdict(list)
+    responses: Dict[str, List[List[str]]] = defaultdict(list)
     users = {}
     headers = ["Username"]
     for i, question in enumerate(questions):
@@ -459,7 +462,7 @@ def poll_responses(_, poll_name):
 
 
 @csrf_exempt
-def delete_distributedpoll(request, poll_name):
+def delete_distributedpoll(request: HttpRequest, poll_name: str) -> HttpResponse:
     if request.method != "DELETE":
         return HttpResponseBadRequest()
 
