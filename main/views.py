@@ -33,10 +33,11 @@ def set_log_level(key='SIMPLEPOLL_LOGLEVEL', default=logging.INFO):
         'CRITICAL': logging.CRITICAL
     }
     try:
-        print log_levels[log_level_name]
-        logger.setLevel(log_levels[log_level_name])
+        log_level = log_levels[log_level_name]
+        logging.basicConfig(level=log_level)
+        logger.setLevel(log_level)
     except KeyError:
-        print("Error")
+        logging.basicConfig(level=logging.NOTSET)
         logger.setLevel(logging.NOTSET)
         logger.error("Could not find the appropriate log level", exc_info=True)
 
