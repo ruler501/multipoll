@@ -400,7 +400,8 @@ def event_handling(request):
             response = requests.get(file_response['file']['url_private_download'], headers={"Authorization": "Bearer " + client_secret})
             file_like_obj = io.StringIO(response.text)
             lines = file_like_obj.readlines()
-            poll, _, _ = load_distributed_poll_file(file_response["title"], lines)
+            print(lines[0])
+            poll, _, _ = load_distributed_poll_file(file_response['file']["title"], lines)
             post_message(request.POST["event"]["channel"], "Distributed Poll Created: " + poll.name, None)
         if request.POST["event"]["text"].lower().startswith("dpoll"):
             name = ' '.join(request.POST["event"]["text"].split(' ')[1:])
