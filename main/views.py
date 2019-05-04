@@ -1,12 +1,10 @@
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponse, HttpResponseBadRequest
 import requests
-from main.models import Teams, Polls, Votes, DistributedPoll, Block, Question, Response
+from main.models import Polls, Votes, DistributedPoll, Block, Question, Response
 from django.core.exceptions import ObjectDoesNotExist
-from django.utils import timezone
 from collections import defaultdict
 import io
-import string
 import random
 from django.views.decorators.csrf import csrf_exempt
 import os
