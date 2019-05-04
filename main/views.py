@@ -1,3 +1,4 @@
+from django.db import IntegrityError
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponse, HttpResponseBadRequest
 import requests
@@ -403,14 +404,18 @@ def event_handling(request):
             response = requests.get(file_response['file']['url_private_download'], headers={"Authorization": "Bearer " + client_secret})
             file_like_obj = io.StringIO(response.text)
             lines = file_like_obj.readlines()
-            poll, _, _ = load_distributed_poll_file(file_response['file']["title"], lines)
-            post_message(request.POST["event"]["channel"], "Distributed Poll Created: " + poll.name, None)
+            try:
+                poll, _, _ = load_distributed_poll_file(file_response['file']["title"], lines)
+                post_message(request.POST["event"]["channel_id"], "Distributed Poll Created: " + poll.name, None)
+            except IntegrityError:
+                post_message(request.POST["event"]["channel_id"], "Could not create distributed poll a poll with name \""
+                             + file_response['file']['title'] + "\" already exists.", None)
         elif request.POST["event"]["type"] == 'message' and request.POST["event"]["text"].lower().startswith("dpoll"):
             name = ' '.join(request.POST["event"]["text"].split(' ')[1:])
             polls = DistributedPoll.objects.filter(name=name)
             if len(polls) == 0:
                 print("Poll not found")
-                post_message(request.POST["event"]["channel_id"], "Poll not found: " + name, None)
+                post_message(request.POST["event"]["channel"], "Poll not found: " + name, None)
             else:
                 poll = polls[0]
                 blocks = list(poll.block_set.all())
