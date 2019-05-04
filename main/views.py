@@ -392,10 +392,11 @@ def event_handling(request):
         return HttpResponse(request.POST["challenge"])
 
     if request.POST["type"] == "event_callback":
-        if request.POST["event"]["text"].lower() == "create distributed poll":
-            post_message(request.POST["event"]["channel"], "Acknowledged", None)
-        if 'files' in request.POST["event"] and len(request.POST["event"]["files"]) > 0:
-            response = requests.get(request.POST["event"]["files"][0]["url_private_download"], headers={"Authorization": "Bearer " + client_secret})
+        if request.POST["event"]["type"] == "file_shared":
+            file_id = request.POST["event"]["file"]["id"]
+            file_response = request.get("https://slack.com/api/files.info?token="+client_secret+"&file="+file_id)
+            print(file_response)
+            response = requests.get(file_response.json()['file']['url_private_download'], headers={"Authorization": "Bearer " + client_secret})
             file_like_obj = io.StringIO(response.text)
             lines = file_like_obj.readlines()
             poll, _, _ = load_distributed_poll_file(request.POST["event"]["files"][0]["title"], lines)
