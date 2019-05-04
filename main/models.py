@@ -1,5 +1,5 @@
 from django.db import models
-import json
+import string
 
 
 class Teams(models.Model):
