@@ -411,7 +411,7 @@ def event_handling(request):
                 post_message(request.POST["event"]["channel"], "Poll not found: " + name, None)
             else:
                 poll = polls[0]
-                blocks = poll.block_set.all()
+                blocks = list(poll.block_set.all())
                 random.shuffle(blocks)
                 blocks = blocks[:5]
                 for block in blocks:
