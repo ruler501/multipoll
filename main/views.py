@@ -390,7 +390,7 @@ def event_handling(request):
             post_message(request.POST["event"]["channel"], "Distributed Poll Created: " + poll.name, None)
         if request.POST["event"]["text"].lower().startswith("dpoll"):
             name = ' '.join(request.POST["event"]["text"].split(' ')[1:])
-            polls = Polls.objects.filter(name=name)
+            polls = DistributedPoll.objects.filter(name=name)
             if len(polls) == 0:
                 post_message(request.POST["event"]["channel"], "Poll not found: " + name, None)
             else:
