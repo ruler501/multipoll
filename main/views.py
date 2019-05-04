@@ -21,8 +21,9 @@ from main.models import Polls, Votes, DistributedPoll, Block, Question, Response
 logger = logging.getLogger(__name__)
 
 
-def set_log_level(key='SIMPLEPOLL_LOGLEVEL', default='INFO'):
-    log_level_name = os.environ.get(key, default)
+def set_log_level(key='SIMPLEPOLL_LOGLEVEL', default=logging.INFO):
+    default_string = logging.getLevelName(default)
+    log_level_name = os.environ.get(key, default_string)
     log_levels = {
         'NOTSET': logging.NOTSET,
         'DEBUG': logging.DEBUG,
@@ -32,8 +33,10 @@ def set_log_level(key='SIMPLEPOLL_LOGLEVEL', default='INFO'):
         'CRITICAL': logging.CRITICAL
     }
     try:
+        print log_levels[log_level_name]
         logger.setLevel(log_levels[log_level_name])
     except KeyError:
+        print("Error")
         logger.setLevel(logging.NOTSET)
         logger.error("Could not find the appropriate log level", exc_info=True)
 

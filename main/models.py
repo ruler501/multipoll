@@ -45,6 +45,7 @@ class Question(models.Model):
     options = models.CharField(max_length=1000)
     id = models.CharField(max_length=8, default=None, blank=True, primary_key=True)
 
+    # Code courtesy of https://stackoverflow.com/a/37359808
     # Sample of an ID generator - could be any string/number generator
     # For a 6-char field, this one yields 2.1 billion unique IDs
     def id_generator(self, size=8, chars=string.ascii_lowercase):
