@@ -395,10 +395,10 @@ def event_handling(request):
                 post_message(request.POST["event"]["channel"], "Poll not found: " + name, None)
             else:
                 poll = polls[0]
-                blocks = poll.block_set()
+                blocks = poll.block_set.all()
                 blocks = random.shuffle(blocks)[:5]
                 for block in blocks:
-                    for question in block.question_set():
+                    for question in block.question_set.all():
                         post_question(request.POST["event"]["channel"], question)
 
     return HttpResponse()
@@ -408,14 +408,14 @@ def event_handling(request):
 def event_responses(_, event_name):
     print "Event Name:", event_name
     poll = DistributedPoll.objects.filter(name=event_name)
-    blocks = poll.block_set()
+    blocks = poll.block_set.all()
     questions = []
     for block in blocks:
-        questions += block.question_set()
+        questions += block.question_set.all()
     responses = defaultdict(list)
     users = {}
     for i, question in enumerate(questions):
-        for response in question.response_set():
+        for response in question.response_se.allt():
             response_list = ['' for _ in questions]
             response_list[i] = response.option
             responses[response.user.id].append(response_list)
