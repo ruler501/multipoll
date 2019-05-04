@@ -5,6 +5,7 @@ from main.models import Teams, Polls, Votes, DistributedPoll, Block, Question, R
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
 from collections import defaultdict
+import io
 import string
 import random
 from django.views.decorators.csrf import csrf_exempt
@@ -433,7 +434,8 @@ def event_handling(request):
             post_message(request.POST["event"]["channel"], "Acknowledged", None)
         if 'files' in request.POST["event"] and len(request.POST["event"]["files"]) > 0:
             response = requests.get(request.POST["event"]["files"][0]["url_private_download"])
-            lines = response.readlines()
+            file_like_obj = io.StringIO(response.text)
+            lines = file_like_obj.readlines()
             poll, _, _ = load_distributed_poll_file(request.POST["event"]["files"][0]["title"], lines)
             post_message(request.POST["event"]["channel"], "Distributed Poll Created: " + poll.name, None)
         if request.POST["event"]["text"].lower().startswith("dpoll"):
