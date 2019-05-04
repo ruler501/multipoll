@@ -392,6 +392,7 @@ def event_handling(request):
             name = ' '.join(request.POST["event"]["text"].split(' ')[1:])
             polls = DistributedPoll.objects.filter(name=name)
             if len(polls) == 0:
+                print("Poll not found")
                 post_message(request.POST["event"]["channel"], "Poll not found: " + name, None)
             else:
                 poll = polls[0]
@@ -399,6 +400,8 @@ def event_handling(request):
                 random.shuffle(blocks)
                 blocks = blocks[:5]
                 for block in blocks:
+                    post_message(request.POST["event"]["channel"], '*' + block.name + '*', None)
+                    print(block.name)
                     for question in block.question_set.all():
                         print(question.question)
                         post_question(request.POST["event"]["channel"], question)
