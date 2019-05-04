@@ -446,7 +446,7 @@ def poll_responses(_, poll_name):
             users[response.user.id] = response.user.name
     responses = {key: collapse_lists(value) for key, value in responses.items()}
     print(responses.values())
-    results = [users[id] + '\t' + '\t'.join(map(str, values)) for id, values in responses.items()]
+    results = [users[id] + '\t' + '\t'.join(l) for id, values in responses.items() for l in values]
     results = ['\t'.join(headers)] + results
     return HttpResponse('\n'.join(results))
 
