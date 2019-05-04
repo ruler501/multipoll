@@ -77,7 +77,7 @@ def get_all_votes(poll):
     return Votes.objects.filter(poll=poll)
 
 
-name_cache = %s
+name_cache = {}
 
 
 def parse_message(message):
