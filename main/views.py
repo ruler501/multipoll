@@ -77,7 +77,7 @@ def get_all_votes(poll):
     return Votes.objects.filter(poll=poll)
 
 
-name_cache = {}
+name_cache = %s
 
 
 def parse_message(message):
@@ -92,7 +92,7 @@ def parse_message(message):
     for i, line in enumerate(message['text'].split('\n')):
         if i < 2 or i - 2 >= len(options):
             continue
-        logger.debug("{}:\t{}", i, line)
+        logger.debug("%s:\t%s", i, line)
         names = options[i-2].join(line.split(options[i-2])[1:]).replace('<@', '').replace('>', '').split(', ')
         if '' in names:
             names.remove('')
@@ -182,9 +182,9 @@ def create_dialog(payload):
         }
     }
     method_params['dialog'] = json.dumps(method_params['dialog'])
-    logger.info("Params: {}", method_params)
+    logger.info("Params: %s", method_params)
     response_data = requests.post(method_url, params=method_params)
-    logger.info("Dialog Response: {}", response_data.json())
+    logger.info("Dialog Response: %s", response_data.json())
 
 
 def load_distributed_poll_file(name, lines):
@@ -267,7 +267,7 @@ def post_message(channel, message, attachments):
     }
     text_response = requests.post(post_message_url, params=post_message_params)
     text_response = text_response.json()
-    logger.info('Response Text: {}', text_response)
+    logger.info('Response Text: %s', text_response)
     return text_response['ts']
 
 
@@ -282,7 +282,7 @@ def update_message(channel, ts, text, attachments):
         "parse": "full"
     }
     text_response = requests.post(method_url, params=method_params)
-    logger.info("Response Text: {}", text_response.json())
+    logger.info("Response Text: %s", text_response.json())
 
 
 def post_question(channel, question):
@@ -380,7 +380,7 @@ def slash_poll(request):
         if i % 2 == 0 and i > 2:
             options.append(items[i-1])
     # all data ready for initial message at this point
-    logger.debug("Options: {}", options)
+    logger.debug("Options: %s", options)
 
     text = format_text(question, options, votes=defaultdict(list))
     attachments = format_attachments(options)
@@ -392,7 +392,7 @@ def slash_poll(request):
 
 @csrf_exempt
 def event_handling(request):
-    logger.info("Request: {}", request.body)
+    logger.info("Request: %s", request.body)
     request.POST = json.loads(request.body)
     error_code = check_token(request)
     if error_code is not None:
@@ -405,7 +405,7 @@ def event_handling(request):
             file_id = request.POST["event"]["file"]["id"]
             file_response = requests.get("https://slack.com/api/files.info?token="+client_secret+"&file="+file_id)
             file_response = file_response.json()
-            logger.info("File Response: {}", file_response)
+            logger.info("File Response: %s", file_response)
             response = requests.get(file_response['file']['url_private_download'],
                                     headers={"Authorization": "Bearer " + client_secret})
             file_like_obj = io.StringIO(response.text)
@@ -445,7 +445,7 @@ def poll_responses(_, poll_name):
     for block in blocks:
         questions += block.question_set.all()
     responses = defaultdict(list)
-    users = {}
+    users = %s
     headers = ["Username"]
     for i, question in enumerate(questions):
         headers.append(question.question)
@@ -455,7 +455,7 @@ def poll_responses(_, poll_name):
             responses[response.user.id].append(response_list)
             users[response.user.id] = response.user.name
     responses = {key: collapse_lists(value) for key, value in responses.items()}
-    logger.debug("Collapsed responses: {}", responses.values())
+    logger.debug("Collapsed responses: %s", responses.values())
     results = [users[userid] + '\t' + '\t'.join(l) for userid, values in responses.items() for l in values]
     results = ['\t'.join(headers)] + results
     return HttpResponse('\n'.join(results))
