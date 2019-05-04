@@ -413,7 +413,7 @@ def event_handling(request):
                 poll = polls[0]
                 blocks = list(poll.block_set.all())
                 random.shuffle(blocks)
-                blocks = blocks[:5]
+                blocks = blocks[:2]
                 for block in blocks:
                     post_message(request.POST["event"]["channel"], '*' + block.name + '*', None)
                     print(block.name)
