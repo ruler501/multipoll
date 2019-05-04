@@ -312,7 +312,7 @@ def interactive_button(request):
                     user = users[0]
                 question = questions[0]
                 response = Response()
-                response.option = payload['actions'][0]['text']
+                response.option = payload['actions'][0]['value']
                 response.question = question
                 response.user = user
                 response.save()
