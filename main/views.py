@@ -158,7 +158,6 @@ def check_token(request):
         sent_token = json.loads(request.POST["payload"])["token"]
     else:
         return HttpResponseBadRequest("400 Request is not signed!")
-    print(sent_token)
     if verifier != sent_token:
         return HttpResponseBadRequest("400 Request is not signed correctly!")
     return None
@@ -243,6 +242,7 @@ def load_distributed_poll_file(name, lines):
                 questions.append(current_question)
                 current_question = None
                 current_options = []
+                on_options = False
             elif current_question is not None:
                 on_options = True
         elif current_question is None:
