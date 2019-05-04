@@ -164,6 +164,7 @@ def load_distributed_poll_file(name, lines):
     poll.name = name
     if poll.name.endswith('.txt'):
         poll.name = poll.name[:-4]
+    poll.save()
     blocks = []
     questions = []
     current_block = None
@@ -177,6 +178,7 @@ def load_distributed_poll_file(name, lines):
                 blocks.append(current_block)
                 on_options = False
                 if current_question is not None:
+                    current_question.save()
                     questions.append(current_question)
                 current_question = None
                 current_options = []
@@ -185,10 +187,12 @@ def load_distributed_poll_file(name, lines):
             current_block = Block()
             current_block.name = line
             current_block.poll = poll
+            current_block.save()
         elif len(line) == 0:
             if on_options:
                 current_question.options = '\t'.join(current_options)
                 questions.append(current_question)
+                current_question.save()
                 current_question = None
                 current_options = []
                 on_options = False
@@ -204,13 +208,6 @@ def load_distributed_poll_file(name, lines):
             current_options.append(line)
     if current_block is not None:
         blocks.append(current_block)
-    poll.save()
-    print(blocks)
-    for block in blocks:
-        block.save()
-    print(questions)
-    for question in questions:
-        question.save()
     return poll, blocks, questions
 
 
