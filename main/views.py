@@ -396,7 +396,8 @@ def event_handling(request):
             else:
                 poll = polls[0]
                 blocks = poll.block_set.all()
-                blocks = random.shuffle(blocks)[:5]
+                random.shuffle(blocks)
+                blocks = blocks[:5]
                 for block in blocks:
                     for question in block.question_set.all():
                         post_question(request.POST["event"]["channel"], question)
