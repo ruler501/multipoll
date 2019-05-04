@@ -392,8 +392,7 @@ def event_handling(request):
 
     if request.POST["type"] == "url_verification":
         return HttpResponse(request.POST["challenge"])
-
-    if request.POST["type"] == "event_callback":
+    elif request.POST["type"] == "event_callback":
         if request.POST["event"]["type"] == "file_shared":
             file_id = request.POST["event"]["file"]["id"]
             file_response = requests.get("https://slack.com/api/files.info?token="+client_secret+"&file="+file_id)
@@ -405,7 +404,7 @@ def event_handling(request):
             print(lines[0])
             poll, _, _ = load_distributed_poll_file(file_response['file']["title"], lines)
             post_message(request.POST["event"]["channel"], "Distributed Poll Created: " + poll.name, None)
-        if request.POST["event"]["text"].lower().startswith("dpoll"):
+        elif request.POST["event"]["text"].lower().startswith("dpoll"):
             name = ' '.join(request.POST["event"]["text"].split(' ')[1:])
             polls = DistributedPoll.objects.filter(name=name)
             if len(polls) == 0:
@@ -436,7 +435,7 @@ def poll_responses(_, poll_name):
     responses = defaultdict(list)
     users = {}
     for i, question in enumerate(questions):
-        for response in question.response_se.allt():
+        for response in question.response_set.all():
             response_list = ['' for _ in questions]
             response_list[i] = response.option
             responses[response.user.id].append(response_list)
