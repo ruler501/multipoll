@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 
 from django.db import migrations, models
+import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
@@ -26,7 +27,7 @@ class Migration(migrations.Migration):
                 ('vote_id', models.AutoField(serialize=False, primary_key=True)),
                 ('user', models.CharField(max_length=1000)),
                 ('content', models.CharField(max_length=1000)),
-                ('poll', models.ForeignKey(to='main.Polls')),
+                ('poll', models.ForeignKey(to='main.Polls', on_delete=django.db.models.deletion.CASCADE)),
             ],
         ),
     ]
