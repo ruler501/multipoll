@@ -445,7 +445,7 @@ def poll_responses(_, poll_name):
     for block in blocks:
         questions += block.question_set.all()
     responses = defaultdict(list)
-    users = %s
+    users = {}
     headers = ["Username"]
     for i, question in enumerate(questions):
         headers.append(question.question)
