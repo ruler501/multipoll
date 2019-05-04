@@ -18,7 +18,7 @@ from main import views
 
 urlpatterns = [
     url(r'^interactive_button/', views.interactive_button, name="interactive_button"),
-    url(r'^poll/', views.poll, name="poll"),
+    url(r'^poll/', views.slash_poll, name="poll"),
     url(r'^event_handling/', views.event_handling, name="event_handling"),
     url(r'^dpoll/(?P<poll_name>\w+)/responses$', views.poll_responses),
     url(r'^dpoll/(?P<poll_name>\w+)/', views.delete_distributedpoll),

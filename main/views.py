@@ -1,20 +1,23 @@
-from django.db import IntegrityError
-from django.shortcuts import get_object_or_404
-from django.http import HttpResponse, HttpResponseBadRequest
-import requests
-from main.models import Polls, Votes, DistributedPoll, Block, Question, Response, User
-from django.core.exceptions import ObjectDoesNotExist
-from collections import defaultdict
 import io
+import logging
 import random
-from django.views.decorators.csrf import csrf_exempt
 import os
 import json
 import math
-import sys
-reload(sys)
-sys.setdefaultencoding('utf8')
 
+from collections import defaultdict
+
+import requests
+
+from django.core.exceptions import ObjectDoesNotExist
+from django.db import IntegrityError
+from django.http import HttpResponse, HttpResponseBadRequest
+from django.shortcuts import get_object_or_404
+from django.views.decorators.csrf import csrf_exempt
+
+from main.models import Polls, Votes, DistributedPoll, Block, Question, Response, User
+
+logger = logging.getLogger(__name__)
 
 client_id = "4676884434.375651972439"
 client_secret = os.environ.get("SLACK_CLIENT_SECRET", "")
@@ -64,7 +67,7 @@ def parse_message(message):
     for i, line in enumerate(message['text'].split('\n')):
         if i < 2 or i - 2 >= len(options):
             continue
-        print i, line
+        logger.debug("{}:\t{}", i, line)
         names = options[i-2].join(line.split(options[i-2])[1:]).replace('<@', '').replace('>', '').split(', ')
         if '' in names:
             names.remove('')
@@ -73,23 +76,23 @@ def parse_message(message):
             if name in name_cache:
                 vote_list.append(name_cache[name])
             else:
-                methodUrl = 'https://slack.com/api/users.info'
-                methodParams = {
+                method_url = 'https://slack.com/api/users.info'
+                method_params = {
                     "token": client_secret,
                     "user": name
                 }
-                response_data = requests.get(methodUrl, params=methodParams)
+                response_data = requests.get(method_url, params=method_params)
                 response = response_data.json()
-                print response
+                logger.info(str(response))
                 res = name
                 if "user" in response and "name" in response["user"]:
                     res = '@' + response["user"]["name"]
                 vote_list.append(res)
                 name_cache[name] = res
         votes[options[i-2]] = vote_list
-        
-    print [message['text']]
-    print votes
+
+    logger.info(message['text'])
+    logger.info(str(votes))
     
     question = message['text'].split('*')[1]
     
@@ -100,7 +103,6 @@ def check_token(request):
     verifier = os.environ.get("SLACK_POLL_VERIFIER", "")
     if request.method != "POST":
         return HttpResponseBadRequest("400 Request should be of type POST.")
-    sent_token = ""
     if "token" in request.POST:
         sent_token = request.POST["token"]
     elif "payload" in request.POST and "token" in json.loads(request.POST["payload"]):
@@ -113,34 +115,34 @@ def check_token(request):
 
 
 def format_text(question, options, votes):
-    text = ""
     text = "*" + question + "*\n\n"
     for option in range(0, len(options)):
-        toAdd = '(' + str(len(votes[options[option]])) + ") " + options[option]
-        toAdd += ', '.join(votes[options[option]])
+        to_add = '(' + str(len(votes[options[option]])) + ") " + options[option]
+        to_add += ' ' + ', '.join(votes[options[option]])
         # Add count + condorcet score here
-        text += unicode(toAdd + '\n')
+        text += unicode(to_add + '\n')
     return text
 
 
 def format_attachments(options, options_name="option", include_add_more=True):
     actions = []
     for option in options:
-        attach = { "name": options_name, "text": option, "type": "button", "value": option }
+        attach = {"name": options_name, "text": option, "type": "button", "value": option}
         actions.append(attach)
     if include_add_more:
-        actions.append({ "name": "addMore", "text": "Add More", "type": "button", "value": "Add More" })
+        actions.append({"name": "addMore", "text": "Add More", "type": "button", "value": "Add More"})
     attachments = []
     for i in range(int(math.ceil(len(actions) / 5.0))):
-        attachment = { "text": "", "callback_id": options_name + "s", "attachment_type": "default", "actions": actions[5*i: 5*i + 5] }
+        attachment = {"text": "", "callback_id": options_name + "s",
+                      "attachment_type": "default", "actions": actions[5*i: 5*i + 5]}
         attachments.append(attachment)
     
     return json.dumps(attachments)
 
 
 def create_dialog(payload):
-    methodUrl = 'https://slack.com/api/dialog.open'
-    methodParams = {
+    method_url = 'https://slack.com/api/dialog.open'
+    method_params = {
         "token": client_secret,
         "trigger_id": payload['trigger_id'],
         "dialog": {
@@ -154,10 +156,10 @@ def create_dialog(payload):
             }]
         }
     }
-    methodParams['dialog'] = json.dumps(methodParams['dialog'])
-    print "Params", methodParams
-    response_data = requests.post(methodUrl, params=methodParams)
-    print "Dialog response", response_data.json()
+    method_params['dialog'] = json.dumps(method_params['dialog'])
+    logger.info("Params: {}", method_params)
+    response_data = requests.post(method_url, params=method_params)
+    logger.info("Dialog Response: {}", response_data.json())
 
 
 def load_distributed_poll_file(name, lines):
@@ -239,7 +241,23 @@ def post_message(channel, message, attachments):
         "attachments": attachments
     }
     text_response = requests.post(post_message_url, params=post_message_params)
-    print 'response text', text_response.json()
+    text_response = text_response.json()
+    logger.info('Response Text: {}', text_response)
+    return text_response['ts']
+
+
+def update_message(channel, ts, text, attachments):
+    method_url = 'https://slack.com/api/chat.update'
+    method_params = {
+        "token": client_secret,
+        "channel": channel,
+        "ts": ts,
+        "text": text,
+        "attachments": attachments,
+        "parse": "full"
+    }
+    text_response = requests.post(method_url, params=method_params)
+    logger.info("Response Text: {}", text_response.json())
 
 
 def post_question(channel, question):
@@ -251,19 +269,17 @@ def post_question(channel, question):
 
 @csrf_exempt
 def interactive_button(request):
-    errorcode = check_token(request)
-    if errorcode is not None:
-        return errorcode
+    error_code = check_token(request)
+    if error_code is not None:
+        return error_code
     payload = json.loads(request.POST['payload'])
-    print payload.items()
+    logger.info(str(payload))
     question = ""
     options = []
     votes = defaultdict(list)
     ts = ""
     if payload["callback_id"] == "newOption":
-        ts = payload['state']
         poll = timestamped_poll(payload['state'])
-        question = poll.question
         options = json.loads(poll.options)
         votes_obj = get_all_votes(poll)
         for vote in votes_obj:
@@ -288,24 +304,13 @@ def interactive_button(request):
             update_vote(poll, payload['actions'][0]['value'], votes[payload['actions'][0]['value']])
         text = format_text(question, options, votes)
         attachments = format_attachments(options)
-        methodUrl = 'https://slack.com/api/chat.update'
-        updateMessage = {
-            "token": client_secret,
-            "channel": payload['channel']['id'],
-            "ts": ts,
-            "text": text,
-            "attachments": attachments,
-            "parse": "full"
-        }
-        text_response = requests.post(methodUrl, params=updateMessage)
-        print 'response text', text_response.json()
+        update_message(payload['channel']['id'], ts, text, attachments)
     elif payload['callback_id'].startswith('qo_'):
         if payload['actions'][0]['name'].startswith('qo_'):
             question_id = payload['actions'][0]['name'][3:]
             questions = Question.objects.filter(id=question_id)
             if len(questions) != 0:
                 users = User.objects.filter(id=payload['user']['name'])
-                user = None
                 if len(users) == 0:
                     user = User()
                     user.name = payload['user']['name']
@@ -325,27 +330,17 @@ def interactive_button(request):
                 votes[response.option] = [payload['user']['name']]
                 text = format_text(question.question, options, votes)
                 ts = payload['original_message']['ts']
-                methodUrl = 'https://slack.com/api/chat.update'
-                updateMessage = {
-                    "token": client_secret,
-                    "channel": payload['channel']['id'],
-                    "ts": ts,
-                    "text": text,
-                    "attachments": attachments,
-                    "parse": "full"
-                }
-                text_response = requests.post(methodUrl, params=updateMessage)
-                print 'response text', text_response.json()
+                update_message(payload['channel']['id'], ts, text, attachments)
 
     return HttpResponse()
 
 
 @csrf_exempt
-def poll(request):
-    errorcode = check_token(request)
-    if errorcode is not None:
-        return errorcode
-    print request.POST.items()
+def slash_poll(request):
+    error_code = check_token(request)
+    if error_code is not None:
+        return error_code
+    logger.info(str(request.POST))
     channel = request.POST["channel_id"]
     data = request.POST["text"]
 
@@ -360,34 +355,19 @@ def poll(request):
         if i % 2 == 0 and i > 2:
             options.append(items[i-1])
     # all data ready for initial message at this point
-    print 'options', options
+    logger.debug("Options: {}", options)
 
-    def sendPollMessage():
-        text = format_text(question, options, votes=defaultdict(list))
-
-        attach_string = format_attachments(options)
-        postMessage_url = "https://slack.com/api/chat.postMessage"
-        postMessage_params = {
-            "token": client_secret,
-            "text": text,
-            "channel": channel,
-            "icon_url": "https://simplepoll.rocks/static/main/simplepolllogo-colors.png",
-            "attachments": attach_string
-        }
-        text_response = requests.post(postMessage_url, params=postMessage_params)
-        print 'response text', text_response.json()
-        return text_response.json()["ts"]  # return message timestamp
-
-    timestamp = sendPollMessage()
-    print timestamp
-    print add_poll(timestamp, channel, question, options).timestamp
+    text = format_text(question, options, votes=defaultdict(list))
+    attachments = format_attachments(options)
+    timestamp = post_message(channel, text, attachments)
+    add_poll(timestamp, channel, question, options)
 
     return HttpResponse()  # Empty 200 HTTP response, to not display any additional content in Slack
 
 
 @csrf_exempt
 def event_handling(request):
-    print "Request:", request.body
+    logger.info("Request: {}", request.body)
     request.POST = json.loads(request.body)
     error_code = check_token(request)
     if error_code is not None:
@@ -400,21 +380,24 @@ def event_handling(request):
             file_id = request.POST["event"]["file"]["id"]
             file_response = requests.get("https://slack.com/api/files.info?token="+client_secret+"&file="+file_id)
             file_response = file_response.json()
-            print(file_response)
-            response = requests.get(file_response['file']['url_private_download'], headers={"Authorization": "Bearer " + client_secret})
+            logger.info("File Response: {}", file_response)
+            response = requests.get(file_response['file']['url_private_download'],
+                                    headers={"Authorization": "Bearer " + client_secret})
             file_like_obj = io.StringIO(response.text)
             lines = file_like_obj.readlines()
             try:
                 poll, _, _ = load_distributed_poll_file(file_response['file']["title"], lines)
                 post_message(request.POST["event"]["channel_id"], "Distributed Poll Created: " + poll.name, None)
-            except IntegrityError:
-                post_message(request.POST["event"]["channel_id"], "Could not create distributed poll a poll with name \""
+            except IntegrityError as e:
+                logger.info("Poll already existed. Exception: {}", e)
+                post_message(request.POST["event"]["channel_id"],
+                             "Could not create distributed poll a poll with name \""
                              + file_response['file']['title'] + "\" already exists.", None)
         elif request.POST["event"]["type"] == 'message' and request.POST["event"]["text"].lower().startswith("dpoll"):
             name = ' '.join(request.POST["event"]["text"].split(' ')[1:])
             polls = DistributedPoll.objects.filter(name=name)
             if len(polls) == 0:
-                print("Poll not found")
+                logger.info("Poll not found")
                 post_message(request.POST["event"]["channel"], "Poll not found: " + name, None)
             else:
                 poll = polls[0]
@@ -423,9 +406,7 @@ def event_handling(request):
                 blocks = blocks[:2]
                 for block in blocks:
                     post_message(request.POST["event"]["channel"], '*' + block.name + '*', None)
-                    print(block.name)
                     for question in block.question_set.all():
-                        print(question.question)
                         post_question(request.POST["event"]["channel"], question)
 
     return HttpResponse()
@@ -449,8 +430,8 @@ def poll_responses(_, poll_name):
             responses[response.user.id].append(response_list)
             users[response.user.id] = response.user.name
     responses = {key: collapse_lists(value) for key, value in responses.items()}
-    print(responses.values())
-    results = [users[id] + '\t' + '\t'.join(l) for id, values in responses.items() for l in values]
+    logger.debug("Collapsed responses: {}", responses.values())
+    results = [users[userid] + '\t' + '\t'.join(l) for userid, values in responses.items() for l in values]
     results = ['\t'.join(headers)] + results
     return HttpResponse('\n'.join(results))
 
