@@ -4,7 +4,6 @@ gunicorn==19.9.0
 newrelic==4.18.0.118
 psycopg2==2.8.2
 requests==2.21.0
-whitenoise==4.1.2
 
 flake8==3.7.7
 flake8-builtins==1.4.1
