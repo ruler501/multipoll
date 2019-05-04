@@ -46,7 +46,7 @@ class Question(models.Model):
 
     # Sample of an ID generator - could be any string/number generator
     # For a 6-char field, this one yields 2.1 billion unique IDs
-    def id_generator(size=8, chars=string.ascii_lowercase):
+    def id_generator(self, size=8, chars=string.ascii_lowercase):
         return ''.join(random.choice(chars) for _ in range(size))
 
     def save(self, *args, **kwargs):
