@@ -1,22 +1,19 @@
 import io
-import logging
-import random
-import os
 import json
+import logging
 import math
-
+import os
+import random
 from collections import defaultdict
 
 import requests
-
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 
-from main.models import Polls, Votes, DistributedPoll, Block, Question, Response, User
-
+from main.models import Block, DistributedPoll, Polls, Question, Response, User, Votes
 
 logger = logging.getLogger(__name__)
 
@@ -87,13 +84,13 @@ def parse_message(message):
         for opt in attachment['actions']:
             if opt['name'] != 'addMore':
                 options.append(opt['text'])
-    
+
     votes = defaultdict(list)
     for i, line in enumerate(message['text'].split('\n')):
         if i < 2 or i - 2 >= len(options):
             continue
         logger.debug("%s:\t%s", i, line)
-        names = options[i-2].join(line.split(options[i-2])[1:]).replace('<@', '').replace('>', '').split(', ')
+        names = options[i - 2].join(line.split(options[i - 2])[1:]).replace('<@', '').replace('>', '').split(', ')
         if '' in names:
             names.remove('')
         vote_list = []
@@ -114,13 +111,13 @@ def parse_message(message):
                     res = '@' + response["user"]["name"]
                 vote_list.append(res)
                 name_cache[name] = res
-        votes[options[i-2]] = vote_list
+        votes[options[i - 2]] = vote_list
 
     logger.info(message['text'])
     logger.info(str(votes))
-    
+
     question = message['text'].split('*')[1]
-    
+
     return question, options, votes
 
 
@@ -145,7 +142,7 @@ def format_text(question, options, votes):
         to_add = '(' + str(len(votes[options[option]])) + ") " + options[option]
         to_add += ' ' + ', '.join(votes[options[option]])
         # Add count + condorcet score here
-        text += unicode(to_add + '\n')
+        text += to_add + '\n'
     return text
 
 
@@ -159,9 +156,9 @@ def format_attachments(options, options_name="option", include_add_more=True):
     attachments = []
     for i in range(int(math.ceil(len(actions) / 5.0))):
         attachment = {"text": "", "callback_id": options_name + "s",
-                      "attachment_type": "default", "actions": actions[5*i: 5*i + 5]}
+                      "attachment_type": "default", "actions": actions[5 * i: 5 * i + 5]}
         attachments.append(attachment)
-    
+
     return json.dumps(attachments)
 
 
@@ -287,7 +284,7 @@ def update_message(channel, ts, text, attachments):
 
 def post_question(channel, question):
     options = question.options.split('\t')
-    attachments = format_attachments(options, "qo_"+question.id, False)
+    attachments = format_attachments(options, "qo_" + question.id, False)
     text = format_text(question.question, options, defaultdict(list))
     post_message(channel, text, attachments)
 
@@ -376,9 +373,9 @@ def slash_poll(request):
 
     question = items[1]
     options = []
-    for i in range(1, len(items)+1):
+    for i in range(1, len(items) + 1):
         if i % 2 == 0 and i > 2:
-            options.append(items[i-1])
+            options.append(items[i - 1])
     # all data ready for initial message at this point
     logger.debug("Options: %s", options)
 
@@ -403,7 +400,7 @@ def event_handling(request):
     elif request.POST["type"] == "event_callback":
         if request.POST["event"]["type"] == "file_shared":
             file_id = request.POST["event"]["file"]["id"]
-            file_response = requests.get("https://slack.com/api/files.info?token="+client_secret+"&file="+file_id)
+            file_response = requests.get("https://slack.com/api/files.info?token=" + client_secret + "&file=" + file_id)
             file_response = file_response.json()
             logger.info("File Response: %s", file_response)
             response = requests.get(file_response['file']['url_private_download'],

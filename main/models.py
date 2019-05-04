@@ -1,6 +1,7 @@
-from django.db import models
 import random
 import string
+
+from django.db import models
 
 
 class Teams(models.Model):
@@ -9,8 +10,8 @@ class Teams(models.Model):
     team_id = models.CharField(primary_key=True, max_length=1000)
     incoming_webhook_url = models.CharField(max_length=1000)
     incoming_webhook_configuration_url = models.CharField(max_length=1000)
-    last_changed = models.DateTimeField(auto_now = True, auto_now_add = False)
-    created = models.DateTimeField(auto_now = False, auto_now_add = True, editable=False)
+    last_changed = models.DateTimeField(auto_now=True, auto_now_add=False)
+    created = models.DateTimeField(auto_now=False, auto_now_add=True, editable=False)
 
     def __unicode__(self):
         return str(self.unique_uuid)
@@ -43,7 +44,7 @@ class Question(models.Model):
     block = models.ForeignKey(Block, on_delete=models.CASCADE)
     question = models.CharField(max_length=1000)
     options = models.CharField(max_length=1000)
-    id = models.CharField(max_length=8, default=None, blank=True, primary_key=True)
+    id = models.CharField(max_length=8, default=None, blank=True, primary_key=True)  # noqa: A003
 
     # Code courtesy of https://stackoverflow.com/a/37359808
     # Sample of an ID generator - could be any string/number generator
@@ -62,7 +63,7 @@ class Question(models.Model):
 
 class User(models.Model):
     name = models.CharField(max_length=100)
-    id = models.CharField(max_length=50, primary_key=True)
+    id = models.CharField(max_length=50, primary_key=True)  # noqa: A003
 
 
 class Response(models.Model):
