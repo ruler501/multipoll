@@ -42,9 +42,28 @@ class Question(models.Model):
     block = models.ForeignKey(Block)
     question = models.CharField(max_length=1000)
     options = models.CharField(max_length=1000)
+    id = models.CharField(max_length=8, null=True, blank=True, primary_key=True)
+
+    # Sample of an ID generator - could be any string/number generator
+    # For a 6-char field, this one yields 2.1 billion unique IDs
+    def id_generator(size=8, chars=string.ascii_lowercase):
+        return ''.join(random.choice(chars) for _ in range(size))
+
+    def save(self, *args, **kwargs):
+        if not self.id:
+            # Generate ID once, then check the db. If exists, keep trying.
+            self.id = self.id_generator()
+            while Question.objects.filter(urlhash=self.urlhash).exists():
+                self.id = self.id_generator()
+        super(Question, self).save(*args, **kwargs)
+
+
+class User(models.Model):
+    name = models.CharField(max_length=100)
+    id = models.CharField(max_length=50, unique=True)
 
 
 class Response(models.Model):
     question = models.ForeignKey(Question)
     option = models.CharField(max_length=100)
-    user = models.CharField(max_length=100)
+    user = models.ForeignKey(User)
