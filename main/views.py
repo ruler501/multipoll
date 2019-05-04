@@ -443,7 +443,7 @@ def poll_responses(_, poll_name):
             responses[response.user.id].append(response_list)
             users[response.user.id] = response.user.name
     responses = {key: collapse_lists(value) for key, value in responses.items()}
-    results = ['\t'.join([users[id]] + values) for id, values in responses.items()]
+    results = [users[id] + '\t' + '\t'.join(values) for id, values in responses.items()]
     results = ['\t'.join(headers)] + results
     return HttpResponse('\n'.join(results))
 
