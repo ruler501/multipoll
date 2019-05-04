@@ -319,7 +319,7 @@ def interactive_button(request):
                 options = question.options.split('\t')
                 attachments = format_attachments(options, "qo_" + question.id, False)
                 votes = defaultdict(list)
-                votes[response.option] = payload['user']['name']
+                votes[response.option] = [payload['user']['name']]
                 text = format_text(question.question, options, votes)
                 ts = payload['original_message']['ts']
                 methodUrl = 'https://slack.com/api/chat.update'
@@ -428,7 +428,7 @@ def event_handling(request):
 
 @csrf_exempt
 def poll_responses(_, poll_name):
-    poll = DistributedPoll.objects.filter(name=poll_name)
+    poll = get_object_or_404(DistributedPoll, name=poll_name)
     blocks = poll.block_set.all()
     questions = []
     for block in blocks:
