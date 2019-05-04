@@ -400,6 +400,7 @@ def event_handling(request):
                 blocks = blocks[:5]
                 for block in blocks:
                     for question in block.question_set.all():
+                        print(question.question)
                         post_question(request.POST["event"]["channel"], question)
 
     return HttpResponse()
