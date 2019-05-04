@@ -181,6 +181,7 @@ def load_distributed_poll_file(name, lines):
                 current_question = None
                 current_options = []
             line = line[8:-2]
+            line = line.strip()
             current_block = Block()
             current_block.name = line
             current_block.poll = poll
@@ -194,6 +195,8 @@ def load_distributed_poll_file(name, lines):
             elif current_question is not None:
                 on_options = True
         elif current_question is None:
+            if current_block is None:
+                raise Exception("Tried to start a question outside of a block\n" + line)
             current_question = Question()
             current_question.question = line
             current_question.block = current_block
