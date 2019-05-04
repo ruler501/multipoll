@@ -360,14 +360,14 @@ def interactive_button(request):
                 text = format_text(question.question, options, {response.option: ['@' + payload['user']['name']]})
                 ts = payload['original_message']['ts']
                 methodUrl = 'https://slack.com/api/chat.update'
-                    updateMessage = {
-                        "token": client_secret,
-                        "channel": payload['channel']['id'],
-                        "ts": ts,
-                        "text": text,
-                        "attachments": attachments,
-                        "parse": "full"
-                    }
+                updateMessage = {
+                    "token": client_secret,
+                    "channel": payload['channel']['id'],
+                    "ts": ts,
+                    "text": text,
+                    "attachments": attachments,
+                    "parse": "full"
+                }
 
     return HttpResponse()
 
