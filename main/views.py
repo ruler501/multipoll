@@ -1,7 +1,7 @@
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponse, HttpResponseBadRequest
 import requests
-from main.models import Polls, Votes, DistributedPoll, Block, Question, Response
+from main.models import Polls, Votes, DistributedPoll, Block, Question, Response, User
 from django.core.exceptions import ObjectDoesNotExist
 from collections import defaultdict
 import io
