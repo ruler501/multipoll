@@ -412,25 +412,25 @@ def event_handling(request: HttpRequest) -> HttpResponse:
             lines = file_like_obj.readlines()
             try:
                 poll, _, _ = load_distributed_poll_file(file_response_dict['file']["title"], lines)
-                post_message(request.POST["event"]["channel_id"], "Distributed Poll Created: " + poll.name, None)
+                post_message(request.POST["event"]["channel_id"], "Distributed Poll Created: " + poll.name, None, True)
             except IntegrityError:
                 logger.info("Poll already existed.", exc_info=True)
                 post_message(request.POST["event"]["channel_id"],
                              "Could not create distributed poll a poll with name \""
-                             + file_response_dict['file']['title'] + "\" already exists.", None)
+                             + file_response_dict['file']['title'] + "\" already exists.", None, True)
         elif request.POST["event"]["type"] == 'message' and request.POST["event"]["text"].lower().startswith("dpoll"):
             name = ' '.join(request.POST["event"]["text"].split(' ')[1:])
             polls = DistributedPoll.objects.filter(name=name)
             if len(polls) == 0:
                 logger.info("Poll not found")
-                post_message(request.POST["event"]["channel"], "Poll not found: " + name, None)
+                post_message(request.POST["event"]["channel"], "Poll not found: " + name, None, True)
             else:
                 poll = polls[0]
                 blocks = list(poll.block_set.all())
                 random.shuffle(blocks)
                 blocks = blocks[:2]
                 for block in blocks:
-                    post_message(request.POST["event"]["channel"], '*' + block.name + '*', None)
+                    post_message(request.POST["event"]["channel"], '*' + block.name + '*', None, True)
                     for question in block.question_set.all():
                         post_question(request.POST["event"]["channel"], question)
 
