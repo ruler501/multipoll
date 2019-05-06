@@ -46,6 +46,7 @@ set_log_level()
 
 client_id = "4676884434.375651972439"
 client_secret = os.environ.get("SLACK_CLIENT_SECRET", "")
+bot_secret = os.environ.get("SLACK_BOT_SECRET", "")
 
 
 def add_poll(timestamp: str, channel: str, question: str, options: List[str]) -> Polls:
@@ -237,10 +238,10 @@ def collapse_lists(lists: List[List[str]]) -> List[List[str]]:
     return result
 
 
-def post_message(channel: str, message: str, attachments: Optional[str]) -> str:
+def post_message(channel: str, message: str, attachments: Optional[str] = None, use_client_secret: bool = True) -> str:
     post_message_url = "https://slack.com/api/chat.postMessage"
     post_message_params = {
-        "token": client_secret,
+        "token": client_secret if use_client_secret else bot_secret,
         "text": message,
         "channel": channel,
         "icon_url": "https://simplepoll.rocks/static/main/simplepolllogo-colors.png",
@@ -252,10 +253,11 @@ def post_message(channel: str, message: str, attachments: Optional[str]) -> str:
     return text_response_dict['ts']
 
 
-def update_message(channel: str, ts: str, text: str, attachments: str) -> None:
+def update_message(channel: str, ts: str, text: str, attachments: Optional[str] = None,
+                   use_client_secret: bool = True) -> None:
     method_url = 'https://slack.com/api/chat.update'
     method_params = {
-        "token": client_secret,
+        "token": client_secret if use_client_secret else bot_secret,
         "channel": channel,
         "ts": ts,
         "text": text,
@@ -270,7 +272,7 @@ def post_question(channel: str, question: Question) -> None:
     options = question.options.split('\t')
     attachments = format_attachments(options, "qo_" + question.id, False)
     text = format_text(question.question, options, defaultdict(list))
-    post_message(channel, text, attachments)
+    post_message(channel, text, attachments, False)
 
 
 def check_token(request: HttpRequest) -> HttpResponse:
@@ -346,13 +348,14 @@ def interactive_button(request: HttpRequest) -> HttpResponse:
                 response.question = question_obj
                 response.user = user
                 response.save()
+                # TODO: Load all responses to this question by this user and populate votes with that
                 options = question_obj.options.split('\t')
                 attachments = format_attachments(options, "qo_" + question_obj.id, False)
                 votes = defaultdict(list)
                 votes[response.option] = [payload['user']['name']]
                 text = format_text(question_obj.question, options, votes)
                 ts = payload['original_message']['ts']
-                update_message(payload['channel']['id'], ts, text, attachments)
+                update_message(payload['channel']['id'], ts, text, attachments, False)
 
     return HttpResponse()
 
