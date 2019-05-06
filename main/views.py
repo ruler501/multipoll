@@ -419,7 +419,7 @@ def event_handling(request: HttpRequest) -> HttpResponse:
                              "Could not create distributed poll a poll with name \""
                              + file_response_dict['file']['title'] + "\" already exists.", None, False)
         elif request.POST["event"]["type"] == 'message' and request.POST["event"]["text"].lower().startswith("dpoll"):
-            name = ' '.join(request.POST["event"]["text"].split(' ')[1:])
+            name = ' '.join(request.POST["event"]["text"].split(' ')[1:]).strip()
             polls = DistributedPoll.objects.filter(name=name)
             if len(polls) == 0:
                 logger.info("Poll not found")
