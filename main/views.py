@@ -249,7 +249,7 @@ def post_message(channel: str, message: str, attachments: Optional[str] = None, 
     }
     text_response = requests.post(post_message_url, params=post_message_params)
     text_response_dict = text_response.json()
-    logger.info('Response Text: %s', text_response)
+    logger.info('Response Text: %s', text_response_dict)
     return text_response_dict['ts']
 
 
