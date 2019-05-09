@@ -96,8 +96,8 @@ if REMOTE_DATABASE is not None:
         'HOST': REMOTE_DATABASE,
         'PORT': os.environ.get("POLLS_DATABASE_PORT", None)
     }
-
-# Parse database configuration from $DATABASE_URL
-config = dj_database_url.config()
-if config and os.environ.get("POLLS_DATABASE", "").lower() != "local":
-    DATABASES['default'] = config
+else:
+    # Parse database configuration from $DATABASE_URL
+    config = dj_database_url.config()
+    if config and os.environ.get("POLLS_DATABASE", "").lower() != "local":
+        DATABASES['default'] = config
