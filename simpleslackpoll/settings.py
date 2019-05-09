@@ -33,7 +33,6 @@ ALLOWED_HOSTS = ["quiet-plateau-59061.herokuapp.com"]
 # Application definition
 
 INSTALLED_APPS = (
-    'django.contrib.contenttypes',
     'main',
 )
 
