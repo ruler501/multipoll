@@ -92,7 +92,7 @@ if REMOTE_DATABASE is not None:
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': os.environ.get("POLLS_DATABASE_NAME", None),
         'USER': os.environ.get("POLLS_DATABASE_USERNAME", None),
-        'PASSWORD': os.environ.get("POLLS_DATABASE_PASSWORD", None)
+        'PASSWORD': os.environ.get("POLLS_DATABASE_PASSWORD", None),
         'HOST': REMOTE_DATABASE,
         'PORT': os.environ.get("POLLS_DATABASE_PORT", None)
     }
