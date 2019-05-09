@@ -309,26 +309,26 @@ def interactive_button(request: HttpRequest) -> HttpResponse:
         poll.options = json.dumps(options)
         poll.save()
     elif payload['callback_id'] == "options":
-        question = ""
-        options = []
-        votes = defaultdict(list)
         if payload["actions"][0]["name"] == "addMore":
-            ts = payload['original_message']['ts']
-            question, options, votes = parse_message(payload['original_message'])
             create_dialog(payload)
         elif payload['actions'][0]["name"] == "option":
+            votes: Dict[str, List[str]] = defaultdict(list)
             ts = payload['original_message']['ts']
-            question, options, votes = parse_message(payload['original_message'])
+            poll = timestamped_poll(payload['original_message']['ts'])
+            question = poll.question
+            options = json.loads(poll.options)
+            votes_obj = get_all_votes(poll)
+            for vote in votes_obj:
+                votes[vote.option] = json.loads(vote.users)
             lst = votes[payload["actions"][0]["value"]]
             if "@" + payload['user']['name'] in lst:
                 votes[payload["actions"][0]["value"]].remove("@" + payload['user']['name'])
             else:
                 votes[payload['actions'][0]['value']].append("@" + payload["user"]["name"])
-            poll = timestamped_poll(payload['original_message']['ts'])
             update_vote(poll, payload['actions'][0]['value'], votes[payload['actions'][0]['value']])
-        text = format_text(question, options, votes)
-        attachments = format_attachments(options)
-        update_message(payload['channel']['id'], ts, text, attachments)
+            text = format_text(question, options, votes)
+            attachments = format_attachments(options)
+            update_message(payload['channel']['id'], ts, text, attachments)
     elif payload['callback_id'].startswith('qo_'):
         if payload['actions'][0]['name'].startswith('qo_'):
             question_id = payload['actions'][0]['name'][3:]
