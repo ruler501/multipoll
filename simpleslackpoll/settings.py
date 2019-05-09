@@ -86,6 +86,16 @@ USE_TZ = True
 # Honor the 'X-Forwarded-Proto' header for request.is_secure()
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
+REMOTE_DATABASE = os.environ.get("POLLS_DATABASE_URL", None)
+if REMOTE_DATABASE is not None:
+    DATABASES['default'] = {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get("POLLS_DATABASE_NAME", None),
+        'USER': os.environ.get("POLLS_DATABASE_USERNAME", None),
+        'PASSWORD': os.environ.get("POLLS_DATABASE_PASSWORD", None)
+        'HOST': REMOTE_DATABASE,
+        'PORT': os.environ.get("POLLS_DATABASE_PORT", None)
+    }
 
 # Parse database configuration from $DATABASE_URL
 config = dj_database_url.config()
