@@ -89,5 +89,5 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # Parse database configuration from $DATABASE_URL
 config = dj_database_url.config()
-if config:
+if config and os.environ.get("POLLS_DATABASE", "").lower() != "local":
     DATABASES['default'] = config
