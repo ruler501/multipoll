@@ -283,10 +283,12 @@ def interactive_button(request: HttpRequest) -> HttpResponse:
             question = get_object_or_404(Question, id=question_id)
             user = find_or_create_user(payload['user'])
             responses = Response.objects.filter(question=question, user=user)
-            for response in responses:
-                response.delete()
-            response_index = question.options.index(payload['actions'][0]['value'])
-            Response.objects.create(option=response_index, question=question, user=user)
+            if len(responses) != 0:
+                for response in responses:
+                    response.delete()
+            else:
+                response_index = question.options.index(payload['actions'][0]['value'])
+                Response.objects.create(option=response_index, question=question, user=user)
             attachments = format_attachments(question.options, "qo_" + question.id, False)
             text = format_text(question.question, question.options, question.responses)
             ts = payload['original_message']['ts']
