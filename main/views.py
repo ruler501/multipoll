@@ -78,7 +78,7 @@ def format_text(question: str, options: List[str], votes: List[List[str]]) -> st
     text = "*" + question + "*\n\n"
     for index, option in enumerate(options):
         to_add = '(' + str(len(votes[index])) + ") " + option
-        to_add += ' ' + ', '.join(votes[index])
+        to_add += ' ' + ', '.join([f'@{username}' for username in votes[index]])
         # Add count + condorcet score here
         text += to_add + '\n'
     return text

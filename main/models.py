@@ -18,10 +18,6 @@ class User(models.Model):
         ]
 
 
-def format_at(user: User) -> str:
-    return f"<@{user.id}>"
-
-
 class Poll(models.Model):
     timestamp = models.CharField(max_length=100, primary_key=True)
     channel = models.CharField(max_length=1000, null=False)
@@ -32,7 +28,7 @@ class Poll(models.Model):
     def votes(self) -> List[List[str]]:
         votes: List[List[str]] = [[] for _ in self.options]
         for vote in self.vote_set.all():
-            votes[vote.option].append(format_at(vote.user))
+            votes[vote.option].append(vote.user.name)
         return votes
 
     class Meta:
@@ -93,7 +89,7 @@ class Question(models.Model):
     def responses(self) -> List[List[str]]:
         votes: List[List[str]] = [[] for _ in self.options]
         for response in self.response_set.all():
-            votes[response.option].append(format_at(response.user))
+            votes[response.option].append(response.user.name)
         return votes
 
     class Meta:
