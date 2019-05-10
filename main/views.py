@@ -63,7 +63,7 @@ def get_all_votes(poll: Poll) -> List[Vote]:
 
 
 def find_or_create_user(user: Dict) -> User:
-    return User.objects.get_or_create(name=user['name'], id=user['id'])[0]
+    return User.objects.get_or_create(name=user['name'])[0]
 
 
 def format_text(question: str, options: List[str], votes: List[List[str]]) -> str:
