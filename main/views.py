@@ -232,7 +232,7 @@ def post_question(channel: str, question: Question) -> None:
     post_message(channel, text, attachments, False)
 
 
-def check_token(request: HttpRequest) -> HttpResponse:
+def check_token(request: HttpRequest) -> Optional[HttpResponse]:
     verifier = os.environ.get("SLACK_POLL_VERIFIER", "")
     if request.method != "POST":
         return HttpResponseBadRequest("400 Request should be of type POST.")
