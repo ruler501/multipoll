@@ -145,7 +145,7 @@ def load_distributed_poll_file(name: str, lines: List[str]) -> Tuple[Distributed
             current_block.save()
         elif len(line) == 0:
             if on_options:
-                current_question.options = '\t'.join(current_options)  # noqa: T484
+                current_question.options = current_options  # noqa: T484
                 questions.append(current_question)
                 current_question.save()  # noqa: T484
                 current_question = None
@@ -162,7 +162,7 @@ def load_distributed_poll_file(name: str, lines: List[str]) -> Tuple[Distributed
         elif on_options:
             current_options.append(line)
     if current_question is not None and on_options:
-        current_question.options = '\t'.join(current_options)  # noqa: T484
+        current_question.options = current_options  # noqa: T484
         questions.append(current_question)
         current_question.save()  # noqa: T484
     if current_block is not None:
