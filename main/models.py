@@ -20,9 +20,9 @@ class TimestampField(models.CharField):
         logging.info(f'to_python: {value}')
         return str(value)
 
-    def get_prep_value(self, value: str) -> float:
+    def get_prep_value(self, value: str) -> str:
         logging.info(f'get_prep_value: {value}')
-        return float(value)
+        return str(value)
 
 
 class User(models.Model):
