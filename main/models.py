@@ -1,10 +1,28 @@
 import datetime
+import logging
 import random
 import string
 from typing import Dict, List
 
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
+
+
+class TimestampField(models.CharField):
+    def __init__(self, **kwargs):
+        kwargs['max_length'] = 50
+        super(TimestampField, self).__init__(**kwargs)
+
+    def db_type(self, connection):
+        return 'TIMESTAMP'
+
+    def to_python(self, value: float) -> str:
+        logging.info(f'to_python: {value}')
+        return str(value)
+
+    def get_prep_value(self, value: str) -> float:
+        logging.info(f'get_prep_value: {value}')
+        return float(value)
 
 
 class User(models.Model):
@@ -19,18 +37,10 @@ class User(models.Model):
 
 
 class Poll(models.Model):
-    timestamp_field = models.DateTimeField(primary_key=True)
+    timestamp = TimestampField(primary_key=True)
     channel = models.CharField(max_length=9, null=False)
     question = models.CharField(max_length=200, null=False)
     options = ArrayField(models.CharField(max_length=50), null=False, max_length=99)
-
-    @property
-    def timestamp(self) -> str:
-        return str(self.timestamp_field.timestamp())
-
-    @timestamp.setter
-    def timestamp(self, value: str) -> None:
-        self.timestamp_field = datetime.datetime.fromtimestamp(float(value))
 
     @property
     def votes(self) -> List[List[str]]:
@@ -40,8 +50,8 @@ class Poll(models.Model):
         return votes
 
     class Meta:
-        get_latest_by = "timestamp_field"
-        ordering = ["timestamp_field"]
+        get_latest_by = "timestamp"
+        ordering = ["timestamp"]
 
 
 class Vote(models.Model):
