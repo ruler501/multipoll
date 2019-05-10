@@ -20,6 +20,7 @@ from django.conf.urls import url
 from main import views
 
 urlpatterns = [
+    url(r'^status/', views.status, name="status"),
     url(r'^interactive_button/', views.interactive_button, name="interactive_button"),
     url(r'^poll/', views.slash_poll, name="poll"),
     url(r'^event_handling/', views.event_handling, name="event_handling"),

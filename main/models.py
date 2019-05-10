@@ -27,7 +27,7 @@ class Poll(models.Model):
     @property
     def votes(self) -> List[List[str]]:
         votes: List[List[str]] = [[] for _ in self.options]
-        for vote in self.vote_set().all():
+        for vote in self.vote_set.all():
             votes[vote.option].append(vote.user.name)
         return votes
 
@@ -88,7 +88,7 @@ class Question(models.Model):
     @property
     def responses(self) -> List[List[str]]:
         votes: List[List[str]] = [[] for _ in self.options]
-        for response in self.response_set().all():
+        for response in self.response_set.all():
             votes[response.option].append(response.user.name)
         return votes
 

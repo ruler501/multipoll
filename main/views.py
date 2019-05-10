@@ -248,6 +248,11 @@ def check_token(request: HttpRequest) -> HttpResponse:
 
 
 @csrf_exempt
+def status(request: HttpRequest) -> HttpResponse:
+    return HttpResponse()
+
+
+@csrf_exempt
 def interactive_button(request: HttpRequest) -> HttpResponse:
     error_code = check_token(request)
     if error_code is not None:
