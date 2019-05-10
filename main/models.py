@@ -17,12 +17,17 @@ class TimestampField(models.CharField):
         return 'TIMESTAMP'
 
     def to_python(self, value: float) -> str:
-        logging.info(f'to_python: {value}')
+        logging.info(f'to_python: {value}, {type(value)}')
         return str(value)
 
     def get_prep_value(self, value: str) -> str:
         logging.info(f'get_prep_value: {value}')
-        return datetime.datetime.fromtimestamp(float(value)).strftime("%Y-%m-%d %H:%M:%S.%f")
+
+        if isinstance(value, datetime.datetime):
+            dt = value
+        else:
+            dt = datetime.datetime.fromtimestamp(float(value))
+        return dt.strftime("%Y-%m-%d %H:%M:%S.%f")
 
 
 class User(models.Model):
