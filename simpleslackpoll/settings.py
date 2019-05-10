@@ -87,7 +87,8 @@ USE_TZ = True
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 REMOTE_DATABASE = os.environ.get("POLLS_DATABASE_URL", None)
-if REMOTE_DATABASE is not None:
+POLLS_DATABASE = os.environ.get("POLLS_DATABASE", "local").lower()
+if POLLS_DATABASE != "local" and POLLS_DATABASE != "dj" and REMOTE_DATABASE is not None:
     DATABASES['default'] = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': os.environ.get("POLLS_DATABASE_NAME", None),
@@ -99,5 +100,5 @@ if REMOTE_DATABASE is not None:
 else:
     # Parse database configuration from $DATABASE_URL
     config = dj_database_url.config()
-    if config and os.environ.get("POLLS_DATABASE", "").lower() != "local":
+    if config and POLLS_DATABASE != "local":
         DATABASES['default'] = config
