@@ -1,3 +1,4 @@
+import datetime
 import random
 import string
 from typing import Dict, List
@@ -7,8 +8,7 @@ from django.db import models
 
 
 class User(models.Model):
-    name = models.CharField(max_length=100, null=False)
-    id = models.CharField(max_length=50, primary_key=True)  # noqa: A003
+    name = models.CharField(max_length=100, null=False, unique=True)
 
     class Meta:
         get_latest_by = "name"
@@ -19,10 +19,18 @@ class User(models.Model):
 
 
 class Poll(models.Model):
-    timestamp = models.CharField(max_length=100, primary_key=True)
-    channel = models.CharField(max_length=1000, null=False)
-    question = models.CharField(max_length=1000, null=False)
-    options = ArrayField(models.CharField(max_length=100), null=False, max_length=99)
+    timestamp_field = models.DateTimeField(primary_key=True)
+    channel = models.CharField(max_length=9, null=False)
+    question = models.CharField(max_length=200, null=False)
+    options = ArrayField(models.CharField(max_length=50), null=False, max_length=99)
+
+    @property
+    def timestamp(self) -> str:
+        return str(self.timestamp_field.timestamp())
+
+    @timestamp.setter
+    def timestamp(self, value: str) -> None:
+        self.timestamp_field = datetime.datetime.fromtimestamp(float(value))
 
     @property
     def votes(self) -> List[List[str]]:
@@ -32,8 +40,8 @@ class Poll(models.Model):
         return votes
 
     class Meta:
-        get_latest_by = "timestamp"
-        ordering = ["timestamp"]
+        get_latest_by = "timestamp_field"
+        ordering = ["timestamp_field"]
 
 
 class Vote(models.Model):
@@ -46,6 +54,9 @@ class Vote(models.Model):
         return self.poll.options[self.option]
 
     class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['poll', 'option', 'user'], name='Single Vote Copy')
+        ]
         ordering = ['option']
 
 
@@ -66,15 +77,15 @@ class Block(models.Model):
 
 class Question(models.Model):
     block = models.ForeignKey(Block, on_delete=models.CASCADE, null=False)
-    question = models.CharField(max_length=1000, null=False)
-    options = ArrayField(models.CharField(max_length=100), null=False, max_length=100)
-    id = models.CharField(max_length=8, default=None, blank=True, primary_key=True)  # noqa: A003
+    question = models.CharField(max_length=200, null=False)
+    options = ArrayField(models.CharField(max_length=50), null=False, max_length=100)
+    id = models.CharField(max_length=4, default=None, blank=True, primary_key=True)  # noqa: A003
 
     # Code courtesy of https://stackoverflow.com/a/37359808
     # Sample of an ID generator - could be any string/number generator
     # For a 6-char field, this one yields 2.1 billion unique IDs
     @staticmethod
-    def id_generator(size: int = 8, chars: str = string.ascii_lowercase) -> str:
+    def id_generator(size: int = 4, chars: str = string.ascii_lowercase) -> str:
         return ''.join(random.choice(chars) for _ in range(size))
 
     def save(self: "Question", *args: List, **kwargs: Dict) -> None:

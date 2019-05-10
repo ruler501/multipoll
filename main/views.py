@@ -62,14 +62,6 @@ def get_all_votes(poll: Poll) -> List[Vote]:
     return poll.vote_set.all()
 
 
-def get_name(user_id: str) -> str:
-    return get_object_or_404(User, id=user_id).name
-
-
-def get_user_id(username: str) -> str:
-    return get_object_or_404(User, name=username).id
-
-
 def find_or_create_user(user: Dict) -> User:
     return User.objects.get_or_create(name=user['name'], id=user['id'])[0]
 
