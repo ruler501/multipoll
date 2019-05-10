@@ -8,13 +8,12 @@ from collections import defaultdict
 from typing import Dict, List, Optional, Tuple
 
 import requests
-from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError
 from django.http import HttpRequest, HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 
-from main.models import Block, DistributedPoll, Polls, Question, Response, User, Votes
+from main.models import Block, DistributedPoll, Poll, Question, Response, User, Vote
 
 logger = logging.getLogger(__name__)
 
@@ -49,83 +48,37 @@ client_secret = os.environ.get("SLACK_CLIENT_SECRET", "")
 bot_secret = os.environ.get("SLACK_BOT_SECRET", "")
 
 
-def add_poll(timestamp: str, channel: str, question: str, options: List[str]) -> Polls:
-    poll = Polls(timestamp=timestamp, channel=channel, question=question, options=json.dumps(options))
+def add_poll(timestamp: str, channel: str, question: str, options: List[str]) -> Poll:
+    poll = Poll(timestamp=timestamp, channel=channel, question=question, options=options)
     poll.save()
     return poll
 
 
-def timestamped_poll(timestamp: str) -> Polls:
-    return Polls.objects.filter(timestamp=timestamp)[0]
+def timestamped_poll(timestamp: str) -> Poll:
+    return get_object_or_404(Poll, timestamp=timestamp)
 
 
-def update_vote(poll: Polls, option: str, users: List[str]) -> Votes:
-    users_str = json.dumps(users)
-    try:
-        vote = Votes.objects.get(poll=poll, option=option)
-        vote.users = users_str
-    except ObjectDoesNotExist:
-        vote = Votes(poll=poll, option=option, users=users_str)
-    vote.save()
-    return vote
+def get_all_votes(poll: Poll) -> List[Vote]:
+    return poll.vote_set.all()
 
 
-def get_all_votes(poll: Polls) -> List[Votes]:
-    return poll.votes_set.all()
+def get_name(user_id: str) -> str:
+    return get_object_or_404(User, id=user_id).name
 
 
-name_cache: Dict[str, str] = {}
+def get_user_id(username: str) -> str:
+    return get_object_or_404(User, name=username).id
 
 
-def parse_message(message: Dict) -> Tuple[str, List[str], Dict[str, List[str]]]:
-    global name_cache
-    options: List[str] = []
-    for attachment in message['attachments']:
-        for opt in attachment['actions']:
-            if opt['name'] != 'addMore':
-                options.append(opt['text'])
-
-    votes: Dict[str, List[str]] = defaultdict(list)
-    for i, line in enumerate(message['text'].split('\n')):
-        if i < 2 or i - 2 >= len(options):
-            continue
-        logger.debug("%s:\t%s", i, line)
-        names = options[i - 2].join(line.split(options[i - 2])[1:]).replace('<@', '').replace('>', '').split(', ')
-        if '' in names:
-            names.remove('')
-        vote_list = []
-        for name in names:
-            if name in name_cache:
-                vote_list.append(name_cache[name])
-            else:
-                method_url = 'https://slack.com/api/users.info'
-                method_params = {
-                    "token": client_secret,
-                    "user": name
-                }
-                response_data = requests.get(method_url, params=method_params)
-                response = response_data.json()
-                logger.info(str(response))
-                res = name
-                if "user" in response and "name" in response["user"]:
-                    res = '@' + response["user"]["name"]
-                vote_list.append(res)
-                name_cache[name] = res
-        votes[options[i - 2]] = vote_list
-
-    logger.info(message['text'])
-    logger.info(str(votes))
-
-    question = message['text'].split('*')[1]
-
-    return question, options, votes
+def find_or_create_user(user: Dict) -> User:
+    return User.objects.get_or_create(name=user['name'], id=user['id'])
 
 
-def format_text(question: str, options: List[str], votes: Dict[str, List[str]]) -> str:
+def format_text(question: str, options: List[str], votes: List[List[str]]) -> str:
     text = "*" + question + "*\n\n"
-    for option in range(0, len(options)):
-        to_add = '(' + str(len(votes[options[option]])) + ") " + options[option]
-        to_add += ' ' + ', '.join(votes[options[option]])
+    for index, option in enumerate(options):
+        to_add = '(' + str(len(votes[index])) + ") " + option
+        to_add += ' ' + ', '.join(votes[index])
         # Add count + condorcet score here
         text += to_add + '\n'
     return text
@@ -273,9 +226,9 @@ def update_message(channel: str, ts: str, text: str, attachments: Optional[str] 
 
 
 def post_question(channel: str, question: Question) -> None:
-    options = question.options.split('\t')
-    attachments = format_attachments(options, "qo_" + question.id, False)
-    text = format_text(question.question, options, defaultdict(list))
+    attachments = format_attachments(question.options, "qo_" + question.id, False)
+    responses = question.responses
+    text = format_text(question.question, question.options, responses)
     post_message(channel, text, attachments, False)
 
 
@@ -303,63 +256,44 @@ def interactive_button(request: HttpRequest) -> HttpResponse:
     logger.info(str(payload))
     ts = ""
     if payload["callback_id"] == "newOption":
-        votes: Dict[str, List[str]] = defaultdict(list)
         poll = timestamped_poll(payload['state'])
-        options: List[str] = json.loads(poll.options)
-        votes_obj = get_all_votes(poll)
-        for vote in votes_obj:
-            votes[vote.option] = json.loads(vote.users)
-        options.append(payload['submission']['new_option'])
-        poll.options = json.dumps(options)
+        votes = poll.votes
+        poll.options.append(payload['submission']['new_option'])
         poll.save()
+        text = format_text(poll.question, poll.options, votes)
+        attachments = format_attachments(poll.options)
+        update_message(payload['channel']['id'], ts, text, attachments)
     elif payload['callback_id'] == "options":
         if payload["actions"][0]["name"] == "addMore":
             create_dialog(payload)
         elif payload['actions'][0]["name"] == "option":
-            votes: Dict[str, List[str]] = defaultdict(list)
             ts = payload['original_message']['ts']
             poll = timestamped_poll(payload['original_message']['ts'])
-            question = poll.question
-            options = json.loads(poll.options)
-            votes_obj = get_all_votes(poll)
-            for vote in votes_obj:
-                votes[vote.option] = json.loads(vote.users)
-            lst = votes[payload["actions"][0]["value"]]
-            if "@" + payload['user']['name'] in lst:
-                votes[payload["actions"][0]["value"]].remove("@" + payload['user']['name'])
+            voted_index = poll.options.index(payload["actions"][0]["value"])
+            user = find_or_create_user(payload['user'])
+            vote = Vote.objects.filter(poll=poll, option=voted_index, user=user).first()
+            if vote is not None:
+                vote.delete()
             else:
-                votes[payload['actions'][0]['value']].append("@" + payload["user"]["name"])
-            update_vote(poll, payload['actions'][0]['value'], votes[payload['actions'][0]['value']])
-            text = format_text(question, options, votes)
-            attachments = format_attachments(options)
+                Vote.objects.create(poll=poll, option=voted_index, user=user)
+            votes = poll.votes
+            text = format_text(poll.question, poll.options, votes)
+            attachments = format_attachments(poll.options)
             update_message(payload['channel']['id'], ts, text, attachments)
     elif payload['callback_id'].startswith('qo_'):
         if payload['actions'][0]['name'].startswith('qo_'):
             question_id = payload['actions'][0]['name'][3:]
-            questions = Question.objects.filter(id=question_id)
-            if len(questions) != 0:
-                users = User.objects.filter(id=payload['user']['name'])
-                if len(users) == 0:
-                    user = User()
-                    user.name = payload['user']['name']
-                    user.id = payload['user']['name']
-                    user.save()
-                else:
-                    user = users[0]
-                question_obj = questions[0]
-                response = Response()
-                response.option = payload['actions'][0]['value']
-                response.question = question_obj
-                response.user = user
-                response.save()
-                # TODO: Load all responses to this question by this user and populate votes with that
-                options = question_obj.options.split('\t')
-                attachments = format_attachments(options, "qo_" + question_obj.id, False)
-                votes = defaultdict(list)
-                votes[response.option] = [payload['user']['name']]
-                text = format_text(question_obj.question, options, votes)
-                ts = payload['original_message']['ts']
-                update_message(payload['channel']['id'], ts, text, attachments, False)
+            question = get_object_or_404(Question, id=question_id)
+            user = find_or_create_user(payload['user'])
+            responses = Response.objects.filter(question=question, user=user)
+            for response in responses:
+                response.delete()
+            response_index = question.options.index(payload['actions'][0]['value'])
+            Response.objects.create(option=response_index, question=question, user=user)
+            attachments = format_attachments(question.options, "qo_" + question.id, False)
+            text = format_text(question.question, question.options, question.responses)
+            ts = payload['original_message']['ts']
+            update_message(payload['channel']['id'], ts, text, attachments, False)
 
     return HttpResponse()
 
@@ -386,7 +320,7 @@ def slash_poll(request: HttpRequest) -> HttpResponse:
     # all data ready for initial message at this point
     logger.debug("Options: %s", options)
 
-    text = format_text(question, options, votes=defaultdict(list))
+    text = format_text(question, options, votes=[[] for _ in options])
     attachments = format_attachments(options)
     timestamp = post_message(channel, text, attachments)
     add_poll(timestamp, channel, question, options)
