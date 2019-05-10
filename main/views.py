@@ -71,7 +71,7 @@ def get_user_id(username: str) -> str:
 
 
 def find_or_create_user(user: Dict) -> User:
-    return User.objects.get_or_create(name=user['name'], id=user['id'])
+    return User.objects.get_or_create(name=user['name'], id=user['id'])[0]
 
 
 def format_text(question: str, options: List[str], votes: List[List[str]]) -> str:
