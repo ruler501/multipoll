@@ -22,7 +22,7 @@ class TimestampField(models.CharField):
 
     def get_prep_value(self, value: str) -> str:
         logging.info(f'get_prep_value: {value}')
-        return datetime.datetime.fromtimestamp(float(value)).strftime("%Y-%m-%d %H-%M-%S.%f")
+        return datetime.datetime.fromtimestamp(float(value)).strftime("%Y-%m-%d %H:%M:%S.%f")
 
 
 class User(models.Model):
