@@ -239,6 +239,26 @@ def check_token(request: HttpRequest) -> Optional[HttpResponse]:
     return None
 
 
+def unique_iter(seq, idfun=None):
+    """ Originally proposed by Andrew Dalke """
+    seen = set()
+    if idfun is None:
+        for x in seq:
+            if x not in seen:
+                seen.add(x)
+                yield x
+    else:
+        for x in seq:
+            x = idfun(x)
+            if x not in seen:
+                seen.add(x)
+                yield x
+
+
+def unique_list(seq, idfun=None): # Order preserving
+    return list(unique_iter(seq, idfun))
+
+
 @csrf_exempt
 def status(request: HttpRequest) -> HttpResponse:
     return HttpResponse()
@@ -256,6 +276,7 @@ def interactive_button(request: HttpRequest) -> HttpResponse:
         poll = timestamped_poll(payload['state'])
         votes = poll.votes
         poll.options.append(payload['submission']['new_option'])
+        poll.options = unique_list(poll.options)
         poll.save()
         text = format_text(poll.question, poll.options, votes)
         attachments = format_attachments(poll.options)
@@ -316,6 +337,7 @@ def slash_poll(request: HttpRequest) -> HttpResponse:
     for i in range(1, len(items) + 1):
         if i % 2 == 0 and i > 2:
             options.append(items[i - 1])
+    options = unique_list(options)
     # all data ready for initial message at this point
     logger.debug("Options: %s", options)
 
