@@ -404,6 +404,11 @@ def event_handling(request: HttpRequest) -> HttpResponse:
                 else:
                     poll = polls[0]
                     blocks = poll.block_set.filter(name__icontains=query)
+                    if len(blocks) == 0:
+                        logger.info("No matching blocks found")
+                        post_message(request.POST["event"]["channel"],
+                                     f'No matching blocks found for query "{query}" in poll "{name}"',
+                                     None, False)
                     for block in blocks:
                         post_message(request.POST["event"]["channel"], '*' + block.name + '*', None, False)
                         for question in block.question_set.all():
