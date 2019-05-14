@@ -4,6 +4,7 @@ import logging
 import math
 import os
 import random
+import time
 from collections import defaultdict
 from typing import Dict, List, Optional, Tuple
 
@@ -394,6 +395,7 @@ def event_handling(request: HttpRequest) -> HttpResponse:
                         post_message(request.POST["event"]["channel"], '*' + block.name + '*', None, False)
                         for question in block.question_set.all():
                             post_question(request.POST["event"]["channel"], question)
+                            time.sleep(0.5)
             elif request.POST["event"]["text"].lower().startswith("blocksearch"):
                 text = request.POST["event"]["text"].replace('\u201c', '"').replace('\u201d', '"')
                 name = text.split('"')[1].strip()
@@ -414,6 +416,7 @@ def event_handling(request: HttpRequest) -> HttpResponse:
                         post_message(request.POST["event"]["channel"], '*' + block.name + '*', None, False)
                         for question in block.question_set.all():
                             post_question(request.POST["event"]["channel"], question)
+                            time.sleep(0.5)
 
     return HttpResponse()
 
