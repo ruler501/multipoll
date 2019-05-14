@@ -255,7 +255,7 @@ def unique_iter(seq, idfun=None):
                 yield x
 
 
-def unique_list(seq, idfun=None): # Order preserving
+def unique_list(seq, idfun=None):  # Order preserving
     return list(unique_iter(seq, idfun))
 
 
@@ -395,8 +395,9 @@ def event_handling(request: HttpRequest) -> HttpResponse:
                         for question in block.question_set.all():
                             post_question(request.POST["event"]["channel"], question)
             elif request.POST["event"]["text"].lower().startswith("blocksearch"):
-                name = request.POST["event"]["text"].split('\u201d')[1].strip()
-                query = request.POST["event"]["text"].split('\u201d')[2].strip()
+                text = request.POST["event"]["text"].replace('\u201c', '"').replace('\u201d', '"')
+                name = text.split('"')[1].strip()
+                query = text.split('"')[2].strip()
                 polls = DistributedPoll.objects.filter(name=name)
                 if len(polls) == 0:
                     logger.info("Poll not found")
