@@ -395,8 +395,8 @@ def event_handling(request: HttpRequest) -> HttpResponse:
                         for question in block.question_set.all():
                             post_question(request.POST["event"]["channel"], question)
             elif request.POST["event"]["text"].lower().startswith("blocksearch"):
-                name = request.POST["event"]["text"].split('"')[1].strip()
-                query = request.POST["event"]["text"].split('"')[2].strip()
+                name = request.POST["event"]["text"].split('\u201d')[1].strip()
+                query = request.POST["event"]["text"].split('\u201d')[2].strip()
                 polls = DistributedPoll.objects.filter(name=name)
                 if len(polls) == 0:
                     logger.info("Poll not found")
