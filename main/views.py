@@ -442,9 +442,9 @@ def poll_responses(request: HttpRequest, poll_name: str) -> HttpResponse:
             responses[response.user.id].append(response_list)
             users[response.user.id] = response.user.name
     responses = {key: collapse_lists(value) for key, value in responses.items()}
-    logger.debug("Collapsed responses: %s", responses.values())
-    results = [users[userid] + '\t' + '\t'.join(l) for userid, values in responses.items() for l in values]
-    results = ['\t'.join(headers)] + results
+    logger.debug(f"Collapsed responses: {responses}")
+    results = ['\t'.join(headers)] + [users[userid] + '\t' + '\t'.join(l) for userid, values in responses.items()
+                                      for l in values]
     return HttpResponse('\n'.join(results))
 
 
