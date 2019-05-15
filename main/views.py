@@ -432,18 +432,16 @@ def poll_responses(request: HttpRequest, poll_name: str) -> HttpResponse:
     for block in blocks:
         questions += block.question_set.all()
     responses: Dict[str, List[List[str]]] = defaultdict(list)
-    users = {}
     headers = ["Username"]
     for i, question in enumerate(questions):
         headers.append(question.question)
         for response in question.response_set.all():
             response_list = ['' for _ in questions]
-            response_list[i] = response.option
-            responses[response.user.id].append(response_list)
-            users[response.user.id] = response.user.name
+            response_list[i] = str(response.option)
+            responses[response.user.name].append(response_list)
     responses = {key: collapse_lists(value) for key, value in responses.items()}
     logger.debug(f"Collapsed responses: {responses}")
-    results = ['\t'.join(headers)] + [users[userid] + '\t' + '\t'.join(l) for userid, values in responses.items()
+    results = ['\t'.join(headers)] + [name + '\t' + '\t'.join(l) for name, values in responses.items()
                                       for l in values]
     return HttpResponse('\n'.join(results))
 
