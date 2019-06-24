@@ -2,14 +2,14 @@ import datetime
 import logging
 import random
 import string
-from typing import Dict, List, Union
+from typing import Dict, List, Union, Any, Optional
 
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 
 
 class TimestampField(models.CharField):
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Optional[Any]):
         kwargs['max_length'] = 50
         super(TimestampField, self).__init__(**kwargs)
 
@@ -24,6 +24,7 @@ class TimestampField(models.CharField):
                 float(value)
                 return value
             except ValueError:
+                # TODO: Investigate type checker saying fromisoformat doesn't exist.
                 return str(datetime.datetime.fromisoformat(value).replace(tzinfo=datetime.timezone.utc).timestamp())
         elif isinstance(value, datetime.datetime):
             return str(value.replace(tzinfo=datetime.timezone.utc).timestamp())
@@ -39,10 +40,13 @@ class TimestampField(models.CharField):
                 fvalue = float(value)
                 return datetime.datetime.utcfromtimestamp(fvalue)
             except ValueError:
+                # TODO: Investigate type checker saying fromisoformat doesn't exist.
                 return datetime.datetime.fromisoformat(value).replace(tzinfo=datetime.timezone.utc)
         elif isinstance(value, datetime.datetime):
+            # TODO: Figure out why type checker says we're missing positional arguments for replace
             return value.replace(tzinfo=datetime.timezone.utc)
         elif isinstance(value, float):
+            # TODO: Figure out why type checker says we're missing positional arguments for replace
             return datetime.datetime.replace(tzinfo=datetime.timezone.utc)
 
         raise TypeError("value was not a recognized type")

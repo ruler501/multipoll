@@ -8,7 +8,7 @@ import random
 import time
 from collections import defaultdict
 from datetime import timezone
-from typing import Dict, List, Optional, Tuple
+from typing import Callable, Dict, Iterable, List, Optional, Tuple, TypeVar, Set
 
 import requests
 from django.db import IntegrityError
@@ -17,6 +17,9 @@ from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 
 from main.models import Block, DistributedPoll, Poll, Question, Response, User, Vote
+
+T = TypeVar('T')
+U = TypeVar('U')
 
 logger = logging.getLogger(__name__)
 
@@ -70,9 +73,10 @@ def find_or_create_user(user: Dict) -> User:
 
 
 def order_options(options: List[str], votes: List[List[str]]) -> Tuple[List[str], List[List[str]]]:
-    pairs = [(option, vote) for option, vote in zip(options, votes)]
+    pairs: List[Tuple[str, List[str]]] = [(option, vote) for option, vote in zip(options, votes)]
     pairs.sort(key=lambda x: len(x[1]), reverse=True)
-    return tuple(zip(*pairs))
+    options, votes = zip(*pairs)
+    return options, votes
 
 
 def format_text(question: str, options: List[str], votes: List[List[str]]) -> str:
@@ -240,13 +244,12 @@ def post_question(channel: str, question: Question) -> None:
 def poll_to_slack_timestamp(poll: Poll) -> str:
     timestamp_datetime: datetime.datetime = poll.timestamp
     logger.info("Timestamp: (%s) - %s", timestamp_datetime, type(timestamp_datetime))
-    try:
+    if isinstance(timestamp_datetime, datetime.datetime):
         timestamp_float = timestamp_datetime.replace(tzinfo=timezone.utc).timestamp()
         timestamp = f"{timestamp_float:17.6f}"
         logger.info("Timestamp Corrected: (%s) - %s", timestamp, type(timestamp))
-    except:
-        logger.error("timestamp_datetime was not a datetime as expected.", exc_info=True)
-        timestamp = timestamp_datetime
+    else:
+        raise TypeError("timestamp_datetime was not a datetime as expected.")
 
     return timestamp
 
@@ -280,24 +283,20 @@ def check_token(request: HttpRequest) -> Optional[HttpResponse]:
     return None
 
 
-def unique_iter(seq, idfun=None):
-    """ Originally proposed by Andrew Dalke """
-    seen = set()
-    if idfun is None:
-        for x in seq:
-            if x not in seen:
-                seen.add(x)
-                yield x
-    else:
-        for x in seq:
-            x = idfun(x)
-            if x not in seen:
-                seen.add(x)
-                yield x
+# TODO: Figure out how to make the type signature work with the default argument
+def unique_iter(seq: Iterable[T], id_function: Callable[[T], U] = lambda x: x) -> Iterable[T]:
+    """Originally proposed by Andrew Dalke."""
+    seen: Set[T] = set()
+    for x in seq:
+        y = id_function(x)
+        if y not in seen:
+            seen.add(y)
+            yield x
 
 
-def unique_list(seq, idfun=None):  # Order preserving
-    return list(unique_iter(seq, idfun))
+# TODO: Figure out how to make the type signature work with the default argument
+def unique_list(seq: Iterable[T], id_function: Callable[[T], U] = lambda x: x) -> List[T]:  # Order preserving
+    return list(unique_iter(seq, id_function))
 
 
 @csrf_exempt
