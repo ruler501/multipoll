@@ -238,7 +238,7 @@ def post_question(channel: str, question: Question) -> None:
 
 def poll_to_slack_timestamp(poll: Poll) -> str:
     timestamp_datetime = poll.timestamp
-    logger.info("Timestamp: (%s) - %s", ts_ts, type(ts_ts))
+    logger.info("Timestamp: (%s) - %s", timestamp_datetime, type(timestamp_datetime))
     try:
         timestamp_float = timestamp_datetime.replace(tzinfo=timezone.utc).timestamp()
         timestamp = f"{timestamp_float:17.6f}"
