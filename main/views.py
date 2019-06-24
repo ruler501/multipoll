@@ -6,6 +6,7 @@ import os
 import random
 import time
 from collections import defaultdict
+from datetime import timezone
 from typing import Dict, List, Optional, Tuple
 
 import requests
@@ -278,8 +279,13 @@ def interactive_button(request: HttpRequest) -> HttpResponse:
         votes = poll.votes
         poll.options.append(payload['submission']['new_option'])
         poll.options = unique_list(poll.options)
-        ts = poll.timestamp
-        logger.info("Timestamp: (%s) - %s", ts, type(ts))
+        ts_ts = poll.timestamp
+        logger.info("Timestamp: (%s) - %s", ts_ts, type(ts_ts))
+        try:
+            ts = ts_ts.replace(tzinfo=timezone.utc).timestamp()
+            logger.info("Timestamp: (%s) - %s", ts, type(ts))
+        except:
+            pass
         poll.save()
         text = format_text(poll.question, poll.options, votes)
         attachments = format_attachments(poll.options)

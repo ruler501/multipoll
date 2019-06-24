@@ -2,7 +2,7 @@ import datetime
 import logging
 import random
 import string
-from typing import Dict, List
+from typing import Dict, List, Union
 
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
@@ -20,8 +20,11 @@ class TimestampField(models.CharField):
         logging.info(f'to_python: {value}, {type(value)}')
         return str(value)
 
-    def get_prep_value(self, value: str) -> str:
-        logging.info(f'get_prep_value: {value}')
+    def from_db_value(self, value, expression, connection, context) -> str:
+        return self.to_python(value)
+
+    def get_prep_value(self, value: Union[str, datetime.datetime, float]) -> str:
+        logging.info(f'get_prep_value: {value} {type(value)}')
 
         if isinstance(value, datetime.datetime):
             dt = value
