@@ -260,7 +260,7 @@ def post_poll(channel: str, poll: Poll) -> str:
 def update_poll(channel: str, poll: Poll) -> None:
     options, votes = order_options(poll.options, poll.votes)
     text = format_text(poll.question, options, votes)
-    attachments = format_attachments(options)
+    attachments = format_attachments(poll.options)
     timestamp = poll_to_slack_timestamp(poll)
     update_message(channel, timestamp, text, attachments)
 
