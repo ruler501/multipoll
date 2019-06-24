@@ -112,7 +112,7 @@ def create_dialog(payload: Dict) -> None:
     method_params['dialog'] = json.dumps(method_params['dialog'])
     logger.info("Params: %s", method_params)
     response_data = requests.post(method_url, params=method_params)
-    logger.info("Dialog Response: %s", response_data.json())
+    logger.info("Dialog Response Body: %s", response_data.content)
 
 
 def load_distributed_poll_file(name: str, lines: List[str]) -> Tuple[DistributedPoll, List[Block], List[Question]]:
@@ -198,8 +198,8 @@ def post_message(channel: str, message: str, attachments: Optional[str] = None, 
         "attachments": attachments
     }
     text_response = requests.post(post_message_url, params=post_message_params)
+    logger.info('Post Response Body: %s', text_response.content)
     text_response_dict = text_response.json()
-    logger.info('Response Text: %s', text_response_dict)
     return text_response_dict['ts']
 
 
@@ -215,7 +215,7 @@ def update_message(channel: str, ts: str, text: str, attachments: Optional[str] 
         "parse": "full"
     }
     text_response = requests.post(method_url, params=method_params)
-    logger.info("Response Text: %s", text_response.json())
+    logger.info("Update Response Body: %s", text_response.content)
 
 
 def post_question(channel: str, question: Question) -> None:
@@ -364,8 +364,8 @@ def event_handling(request: HttpRequest) -> HttpResponse:
         if request.POST["event"]["type"] == "file_shared":
             file_id = request.POST["event"]["file"]["id"]
             file_response = requests.get("https://slack.com/api/files.info?token=" + client_secret + "&file=" + file_id)
+            logger.info("File Response Body: %s", file_response.content)
             file_response_dict: Dict = file_response.json()
-            logger.info("File Response: %s", file_response_dict)
             response = requests.get(file_response_dict['file']['url_private_download'],
                                     headers={"Authorization": "Bearer " + client_secret})
             file_like_obj = io.StringIO(response.text)
