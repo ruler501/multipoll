@@ -273,13 +273,13 @@ def interactive_button(request: HttpRequest) -> HttpResponse:
         return error_code
     payload = json.loads(request.POST['payload'])
     logger.info(str(payload))
-    ts = ""
     if payload["callback_id"] == "newOption":
         poll = timestamped_poll(payload['state'])
         votes = poll.votes
         poll.options.append(payload['submission']['new_option'])
         poll.options = unique_list(poll.options)
         ts = poll.timestamp
+        logger.info("Timestamp: (%s) - %s", ts, type(ts))
         poll.save()
         text = format_text(poll.question, poll.options, votes)
         attachments = format_attachments(poll.options)
