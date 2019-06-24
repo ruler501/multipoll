@@ -1,3 +1,4 @@
+import datetime
 import io
 import json
 import logging
@@ -70,7 +71,7 @@ def find_or_create_user(user: Dict) -> User:
 
 def order_options(options: List[str], votes: List[List[str]]) -> Tuple[List[str], List[List[str]]]:
     pairs = [(option, vote) for option, vote in zip(options, votes)]
-    pairs.sort(key=lambda x: len(x[1]))
+    pairs.sort(key=lambda x: len(x[1]), reverse=True)
     return tuple(zip(*pairs))
 
 
@@ -237,14 +238,14 @@ def post_question(channel: str, question: Question) -> None:
 
 
 def poll_to_slack_timestamp(poll: Poll) -> str:
-    timestamp_datetime = poll.timestamp
+    timestamp_datetime: datetime.datetime = poll.timestamp
     logger.info("Timestamp: (%s) - %s", timestamp_datetime, type(timestamp_datetime))
     try:
         timestamp_float = timestamp_datetime.replace(tzinfo=timezone.utc).timestamp()
         timestamp = f"{timestamp_float:17.6f}"
         logger.info("Timestamp Corrected: (%s) - %s", timestamp, type(timestamp))
     except:
-        logger.error("ts_ts was not a datetime as expected.", exc_info=True)
+        logger.error("timestamp_datetime was not a datetime as expected.", exc_info=True)
         timestamp = timestamp_datetime
 
     return timestamp
