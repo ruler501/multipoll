@@ -282,10 +282,11 @@ def interactive_button(request: HttpRequest) -> HttpResponse:
         ts_ts = poll.timestamp
         logger.info("Timestamp: (%s) - %s", ts_ts, type(ts_ts))
         try:
-            ts = ts_ts.replace(tzinfo=timezone.utc).timestamp()
+            ts = str(ts_ts.replace(tzinfo=timezone.utc).timestamp())
             logger.info("Timestamp: (%s) - %s", ts, type(ts))
         except:
-            pass
+            logger.error("ts_ts was not a datetime as expected.", exc_info=True)
+            ts = ts_ts
         poll.save()
         text = format_text(poll.question, poll.options, votes)
         attachments = format_attachments(poll.options)
