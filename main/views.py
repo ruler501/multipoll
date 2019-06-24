@@ -190,14 +190,14 @@ def collapse_lists(lists: List[List[str]]) -> List[List[str]]:
 
 def post_message(channel: str, message: str, attachments: Optional[str] = None, use_client_secret: bool = True) -> str:
     post_message_url = "https://slack.com/api/chat.postMessage"
-    post_message_params = {
-        "token": client_secret if use_client_secret else bot_secret,
+    body_dict = {
         "text": message,
         "channel": channel,
         "icon_url": "https://simplepoll.rocks/static/main/simplepolllogo-colors.png",
         "attachments": attachments
     }
-    text_response = requests.post(post_message_url, params=post_message_params)
+    headers = {"Authorization": f"Bearer {client_secret if use_client_secret else bot_secret}"}
+    text_response = requests.post(post_message_url, headers=headers, json=body_dict)
     logger.info('Post Response Body: %s', text_response.content)
     text_response_dict = text_response.json()
     return text_response_dict['ts']
@@ -206,15 +206,16 @@ def post_message(channel: str, message: str, attachments: Optional[str] = None, 
 def update_message(channel: str, ts: str, text: str, attachments: Optional[str] = None,
                    use_client_secret: bool = True) -> None:
     method_url = 'https://slack.com/api/chat.update'
-    method_params = {
-        "token": client_secret if use_client_secret else bot_secret,
+    body_dict = {
         "channel": channel,
         "ts": ts,
         "text": text,
         "attachments": attachments,
         "parse": "full"
     }
-    text_response = requests.post(method_url, params=method_params)
+    # Content-type is automatically set since we use the json parameter
+    headers = {"Authorization": f"Bearer {client_secret if use_client_secret else bot_secret}"}
+    text_response = requests.post(method_url, headers=headers, json=body_dict)
     logger.info("Update Response Body: %s", text_response.content)
 
 
@@ -278,6 +279,7 @@ def interactive_button(request: HttpRequest) -> HttpResponse:
         votes = poll.votes
         poll.options.append(payload['submission']['new_option'])
         poll.options = unique_list(poll.options)
+        ts = poll.timestamp
         poll.save()
         text = format_text(poll.question, poll.options, votes)
         attachments = format_attachments(poll.options)
