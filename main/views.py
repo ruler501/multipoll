@@ -68,6 +68,12 @@ def find_or_create_user(user: Dict) -> User:
     return User.objects.get_or_create(name=user['name'])[0]
 
 
+def order_options(options: List[str], votes: List[List[str]]) -> Tuple[List[str], List[List[str]]]:
+    pairs = [(option, vote) for option, vote in zip(options, votes)]
+    pairs.sort(key=lambda x: len(x[1]))
+    return tuple(zip(*pairs))
+
+
 def format_text(question: str, options: List[str], votes: List[List[str]]) -> str:
     text = "*" + question + "*\n\n"
     for index, option in enumerate(options):
@@ -206,12 +212,12 @@ def post_message(channel: str, message: str, attachments: Optional[str] = None, 
     return text_response_dict['ts']
 
 
-def update_message(channel: str, ts: str, text: str, attachments: Optional[str] = None,
+def update_message(channel: str, timestamp: str, text: str, attachments: Optional[str] = None,
                    use_client_secret: bool = True) -> None:
     method_url = 'https://slack.com/api/chat.update'
     body_dict = {
         "channel": channel,
-        "ts": ts,
+        "ts": timestamp,
         "text": text,
         "attachments": attachments,
         "parse": "full"
@@ -228,6 +234,34 @@ def post_question(channel: str, question: Question) -> None:
     responses = question.responses
     text = format_text(question.question, question.options, responses)
     post_message(channel, text, attachments, False)
+
+
+def poll_to_slack_timestamp(poll: Poll) -> str:
+    timestamp_datetime = poll.timestamp
+    logger.info("Timestamp: (%s) - %s", ts_ts, type(ts_ts))
+    try:
+        timestamp_float = timestamp_datetime.replace(tzinfo=timezone.utc).timestamp()
+        timestamp = f"{timestamp_float:17.6f}"
+        logger.info("Timestamp Corrected: (%s) - %s", timestamp, type(timestamp))
+    except:
+        logger.error("ts_ts was not a datetime as expected.", exc_info=True)
+        timestamp = timestamp_datetime
+
+    return timestamp
+
+
+def post_poll(channel: str, poll: Poll) -> str:
+    text = format_text(poll.question, poll.options, poll.votes)
+    attachments = format_attachments(poll.options)
+    return post_message(channel, text, attachments)
+
+
+def update_poll(channel: str, poll: Poll) -> None:
+    options, votes = order_options(poll.options, poll.votes)
+    text = format_text(poll.question, options, votes)
+    attachments = format_attachments(options)
+    timestamp = poll_to_slack_timestamp(poll)
+    update_message(channel, timestamp, text, attachments)
 
 
 def check_token(request: HttpRequest) -> Optional[HttpResponse]:
@@ -279,27 +313,14 @@ def interactive_button(request: HttpRequest) -> HttpResponse:
     logger.info(str(payload))
     if payload["callback_id"] == "newOption":
         poll = timestamped_poll(payload['state'])
-        votes = poll.votes
         poll.options.append(payload['submission']['new_option'])
         poll.options = unique_list(poll.options)
-        ts_ts = poll.timestamp
-        logger.info("Timestamp: (%s) - %s", ts_ts, type(ts_ts))
-        try:
-            ts_f = ts_ts.replace(tzinfo=timezone.utc).timestamp()
-            ts = f"{ts_f:17.6f}"
-            logger.info("Timestamp: (%s) - %s", ts, type(ts))
-        except:
-            logger.error("ts_ts was not a datetime as expected.", exc_info=True)
-            ts = ts_ts
         poll.save()
-        text = format_text(poll.question, poll.options, votes)
-        attachments = format_attachments(poll.options)
-        update_message(payload['channel']['id'], ts, text, attachments)
+        update_poll(payload['channel']['id'], poll)
     elif payload['callback_id'] == "options":
         if payload["actions"][0]["name"] == "addMore":
             create_dialog(payload)
         elif payload['actions'][0]["name"] == "option":
-            ts = payload['original_message']['ts']
             poll = timestamped_poll(payload['original_message']['ts'])
             voted_index = poll.options.index(payload["actions"][0]["value"])
             user = find_or_create_user(payload['user'])
@@ -308,10 +329,7 @@ def interactive_button(request: HttpRequest) -> HttpResponse:
                 vote.delete()
             else:
                 Vote.objects.create(poll=poll, option=voted_index, user=user)
-            votes = poll.votes
-            text = format_text(poll.question, poll.options, votes)
-            attachments = format_attachments(poll.options)
-            update_message(payload['channel']['id'], ts, text, attachments)
+            update_poll(payload['channel']['id'], poll)
     elif payload['callback_id'].startswith('qo_'):
         if payload['actions'][0]['name'].startswith('qo_'):
             question_id = payload['actions'][0]['name'][3:]
@@ -326,8 +344,8 @@ def interactive_button(request: HttpRequest) -> HttpResponse:
                 Response.objects.create(option=response_index, question=question, user=user)
             attachments = format_attachments(question.options, "qo_" + question.id, False)
             text = format_text(question.question, question.options, question.responses)
-            ts = payload['original_message']['ts']
-            update_message(payload['channel']['id'], ts, text, attachments, False)
+            timestamp = payload['original_message']['ts']
+            update_message(payload['channel']['id'], timestamp, text, attachments, False)
 
     return HttpResponse()
 
