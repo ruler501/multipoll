@@ -16,12 +16,36 @@ class TimestampField(models.CharField):
     def db_type(self, connection):
         return 'TIMESTAMP'
 
-    def to_python(self, value: float) -> str:
+    def to_python(self, value: Union[str, datetime.datetime, float]) -> str:
         logging.info(f'to_python: {value}, {type(value)}')
-        return str(value)
 
-    def from_db_value(self, value, expression, connection, context) -> str:
-        return self.to_python(value)
+        if isinstance(value, str):
+            try:
+                float(value)
+                return value
+            except ValueError:
+                return str(datetime.datetime.fromisoformat(value).replace(tzinfo=datetime.timezone.utc).timestamp())
+        elif isinstance(value, datetime.datetime):
+            return str(value.replace(tzinfo=datetime.timezone.utc).timestamp())
+        elif isinstance(value, float):
+            return str(value)
+
+        raise TypeError("value was not a recognized type")
+
+    def from_db_value(self, value, expression, connection, context) -> datetime.datetime:
+        logging.info(f'db_value: {value}, {type(value)}')
+        if isinstance(value, str):
+            try:
+                fvalue = float(value)
+                return datetime.datetime.utcfromtimestamp(fvalue)
+            except ValueError:
+                return datetime.datetime.fromisoformat(value).replace(tzinfo=datetime.timezone.utc)
+        elif isinstance(value, datetime.datetime):
+            return value.replace(tzinfo=datetime.timezone.utc)
+        elif isinstance(value, float):
+            return datetime.datetime.replace(tzinfo=datetime.timezone.utc)
+
+        raise TypeError("value was not a recognized type")
 
     def get_prep_value(self, value: Union[str, datetime.datetime, float]) -> str:
         logging.info(f'get_prep_value: {value} {type(value)}')
