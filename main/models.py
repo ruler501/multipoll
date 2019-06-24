@@ -79,6 +79,8 @@ class Poll(models.Model):
         votes: List[List[str]] = [[] for _ in self.options]
         for vote in self.vote_set.all():
             votes[vote.option].append(vote.user.name)
+
+        votes = [sorted(option) for option in votes]
         return votes
 
     class Meta:
