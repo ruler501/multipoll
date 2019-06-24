@@ -114,6 +114,7 @@ def create_dialog(payload: Dict) -> None:
     logger.info("Params: %s", method_params)
     response_data = requests.post(method_url, params=method_params)
     logger.info("Dialog Response Body: %s", response_data.content)
+    response_data.raise_for_status()
 
 
 def load_distributed_poll_file(name: str, lines: List[str]) -> Tuple[DistributedPoll, List[Block], List[Question]]:
@@ -200,6 +201,7 @@ def post_message(channel: str, message: str, attachments: Optional[str] = None, 
     headers = {"Authorization": f"Bearer {client_secret if use_client_secret else bot_secret}"}
     text_response = requests.post(post_message_url, headers=headers, json=body_dict)
     logger.info('Post Response Body: %s', text_response.content)
+    text_response.raise_for_status()
     text_response_dict = text_response.json()
     return text_response_dict['ts']
 
@@ -218,6 +220,7 @@ def update_message(channel: str, ts: str, text: str, attachments: Optional[str] 
     headers = {"Authorization": f"Bearer {client_secret if use_client_secret else bot_secret}"}
     text_response = requests.post(method_url, headers=headers, json=body_dict)
     logger.info("Update Response Body: %s", text_response.content)
+    text_response.raise_for_status()
 
 
 def post_question(channel: str, question: Question) -> None:
@@ -375,9 +378,11 @@ def event_handling(request: HttpRequest) -> HttpResponse:
             file_id = request.POST["event"]["file"]["id"]
             file_response = requests.get("https://slack.com/api/files.info?token=" + client_secret + "&file=" + file_id)
             logger.info("File Response Body: %s", file_response.content)
+            file_response.raise_for_status()
             file_response_dict: Dict = file_response.json()
             response = requests.get(file_response_dict['file']['url_private_download'],
                                     headers={"Authorization": "Bearer " + client_secret})
+            response.raise_for_status()
             file_like_obj = io.StringIO(response.text)
             lines = file_like_obj.readlines()
             try:
