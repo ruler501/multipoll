@@ -282,7 +282,8 @@ def interactive_button(request: HttpRequest) -> HttpResponse:
         ts_ts = poll.timestamp
         logger.info("Timestamp: (%s) - %s", ts_ts, type(ts_ts))
         try:
-            ts = str(ts_ts.replace(tzinfo=timezone.utc).timestamp())
+            ts_f = ts_ts.replace(tzinfo=timezone.utc).timestamp()
+            ts = f"{ts_f:10.6}"
             logger.info("Timestamp: (%s) - %s", ts, type(ts))
         except:
             logger.error("ts_ts was not a datetime as expected.", exc_info=True)
