@@ -50,8 +50,8 @@ def set_log_level(key: str = 'SIMPLEPOLL_LOGLEVEL', default: int = logging.INFO)
 set_log_level()
 
 client_id = "4676884434.375651972439"
-client_secret = os.environ.get("SLACK_CLIENT_SECRET", "")
-bot_secret = os.environ.get("SLACK_BOT_SECRET", "")
+client_secret = os.environ.get("POLLS_CLIENT_SECRET", "")
+bot_secret = os.environ.get("POLLS_BOT_SECRET", "")
 
 
 def add_poll(timestamp: str, channel: str, question: str, options: List[str]) -> Poll:
@@ -269,7 +269,7 @@ def update_poll(channel: str, poll: Poll) -> None:
 
 
 def check_token(request: HttpRequest) -> Optional[HttpResponse]:
-    verifier = os.environ.get("SLACK_POLL_VERIFIER", "")
+    verifier = os.environ.get("POLLS_SLACK_VERIFIER", "")
     if request.method != "POST":
         return HttpResponseBadRequest("400 Request should be of type POST.")
     if "token" in request.POST:
@@ -299,6 +299,12 @@ def unique_list(seq: Iterable[T], id_function: Callable[[T], U] = lambda x: x) -
     return list(unique_iter(seq, id_function))
 
 
+def normalize_post(request: HttpRequest) -> None:
+    if getattr(request, "POST") is None:
+       request.POST = json.loads(request.body)
+    logger.info(f'Request: {request.POST}')
+
+
 @csrf_exempt
 def status(request: HttpRequest) -> HttpResponse:
     return HttpResponse()
@@ -306,11 +312,14 @@ def status(request: HttpRequest) -> HttpResponse:
 
 @csrf_exempt
 def interactive_button(request: HttpRequest) -> HttpResponse:
+    normalize_post(request)
+    
     error_code = check_token(request)
     if error_code is not None:
         return error_code
+    
     payload = json.loads(request.POST['payload'])
-    logger.info(str(payload))
+    logger.info(f'Payload: {payload}')
     if payload["callback_id"] == "newOption":
         poll = timestamped_poll(payload['state'])
         poll.options.append(payload['submission']['new_option'])
@@ -352,10 +361,11 @@ def interactive_button(request: HttpRequest) -> HttpResponse:
 
 @csrf_exempt
 def slash_poll(request: HttpRequest) -> HttpResponse:
+    normalize_post(request)
+    
     error_code = check_token(request)
     if error_code is not None:
         return error_code
-    logger.info(str(request.POST))
     channel = request.POST["channel_id"]
     data = request.POST["text"]
 
@@ -383,8 +393,7 @@ def slash_poll(request: HttpRequest) -> HttpResponse:
 
 @csrf_exempt
 def event_handling(request: HttpRequest) -> HttpResponse:
-    logger.info("Request: %s", request.body)
-    request.POST = json.loads(request.body)
+    normalize_post(request)
     
     if request.POST["type"] == "url_verification":
         return HttpResponse(request.POST["challenge"])
