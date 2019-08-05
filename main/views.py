@@ -385,13 +385,15 @@ def slash_poll(request: HttpRequest) -> HttpResponse:
 def event_handling(request: HttpRequest) -> HttpResponse:
     logger.info("Request: %s", request.body)
     request.POST = json.loads(request.body)
+    
+    if request.POST["type"] == "url_verification":
+        return HttpResponse(request.POST["challenge"])
+    
     error_code = check_token(request)
     if error_code is not None:
         return error_code
 
-    if request.POST["type"] == "url_verification":
-        return HttpResponse(request.POST["challenge"])
-    elif request.POST["type"] == "event_callback":
+    if request.POST["type"] == "event_callback":
         if request.POST["event"]["type"] == "file_shared":
             file_id = request.POST["event"]["file"]["id"]
             file_response = requests.get("https://slack.com/api/files.info?token=" + client_secret + "&file=" + file_id)
