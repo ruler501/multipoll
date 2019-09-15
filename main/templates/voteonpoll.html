@@ -1,0 +1,16 @@
+<h1>{{ form.instance.poll.question }}</h1>
+<form action="/polls/{{ form.instance.poll.timestamp_str }}/vote" method="post">
+    {{ form.as_p }}
+    <input type="hidden" name="_method" value="vote">
+    <input type="submit" value="Submit Vote">
+</form>
+
+<form action="/polls/{{ form.instance.poll.timestamp_str }}/vote" method="post">
+    <input type="hidden" name="_method" value="addvote">
+    <input type="hidden" name="next" value="{{ path }}">
+    <p>
+        <label for="id_new_option">New Option:</label>
+        <input type="text" name="option" maxlength="100" id="id_new_option">
+    </p>
+    <input type="submit" value="Add Option">
+</form>

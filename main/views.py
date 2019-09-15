@@ -8,15 +8,18 @@ import random
 import time
 from collections import defaultdict
 from datetime import timezone
-from typing import Callable, Dict, Iterable, List, Optional, Tuple, TypeVar, Set
+from typing import Callable, Dict, Iterable, List, Optional, Tuple, TypeVar, Set, Union
 
 import requests
-from django.db import IntegrityError
-from django.http import HttpRequest, HttpResponse, HttpResponseBadRequest
-from django.shortcuts import get_object_or_404
+from django.core import serializers
+from django.core.exceptions import PermissionDenied
+from django.db import IntegrityError, models
+from django.http import HttpRequest, HttpResponse, HttpResponseBadRequest, Http404, JsonResponse
+from django.shortcuts import get_object_or_404, render, redirect
 from django.views.decorators.csrf import csrf_exempt
 
-from main.models import Block, DistributedPoll, Poll, Question, Response, User, Vote
+from main.models import Block, DistributedPoll, Poll, Question, Response, User, Vote, CompleteVote, validate_vote
+from main.forms import NameAndSecretForm, MultipleChoiceCompleteVoteForm
 
 T = TypeVar('T')
 U = TypeVar('U')
@@ -68,8 +71,25 @@ def get_all_votes(poll: Poll) -> List[Vote]:
     return poll.vote_set.all()
 
 
-def find_or_create_user(user: Dict) -> User:
-    return User.objects.get_or_create(name=user['name'])[0]
+def find_or_create_user(user: Union[Dict, str]) -> User:
+    if isinstance(user, dict):
+        user_name = user['name']
+    elif isinstance(user, str):
+        user_name = user
+    else:
+        raise Http404()
+    return User.objects.get_or_create(name=user_name)[0]
+
+
+def find_or_create_vote(poll: Poll, user_name: str, user_secret: str):
+    user = find_or_create_user(user_name)
+    existing = validate_vote(poll, user, user_secret)
+    if existing:
+        return existing
+    else:
+        vote = CompleteVote(poll=poll, user=user, user_secret=user_secret)
+        vote.save()
+        return vote
 
 
 def order_options(options: List[str], votes: List[List[str]]) -> Tuple[List[str], List[List[str]]]:
@@ -301,12 +321,12 @@ def unique_list(seq: Iterable[T], id_function: Callable[[T], U] = lambda x: x) -
 
 def normalize_post(request: HttpRequest) -> None:
     if getattr(request, "POST") is None:
-       request.POST = json.loads(request.body)
+        request.POST = json.loads(request.body)
     logger.info(f'Request: {request.POST}')
 
 
 @csrf_exempt
-def status(request: HttpRequest) -> HttpResponse:
+def server_status(request: HttpRequest) -> HttpResponse:
     return HttpResponse()
 
 
@@ -500,3 +520,86 @@ def delete_distributedpoll(request: HttpRequest, poll_name: str) -> HttpResponse
     poll.delete()
 
     return HttpResponse()
+
+def JsonModelResponse(model: models.Model, status_code: int = 200, location: str = None, request: HttpRequest = None) -> JsonResponse:
+    serialized = serializers.serialize('python', [model])
+    response = JsonResponse(serialized[0])
+    response.status_code = status_code
+    if location:
+        if request:
+            response["Location"] = request.build_absolute_uri(location)
+        else:
+            response["Location"] = location
+    return response
+
+def create_poll(request: HttpRequest) -> HttpResponse:
+    if request.method == "POST":
+        poll_data = json.loads(request.body)
+        if 'timestamp' in poll_data or 'question' not in poll_data or 'options' not in poll_data:
+            return HttpResponseBadRequest()
+        timestamp = str(datetime.datetime.utcnow().timestamp())
+        question = poll_data['question']
+        options = poll_data['options']
+        channel = poll_data.get('channel', os.environ.get('POLLS_DEFAULT_CHANNEL', ''))
+        poll = Poll(timestamp=timestamp, question=question, options=options, channel=channel)
+        poll.save()
+        return JsonModelResponse(poll, 201, f'/polls/{poll.timestamp_str}/', request)
+    else:
+        return HttpResponseBadRequest()
+
+
+def view_poll(request: HttpRequest, poll_timestamp: str) -> HttpResponse:
+    if request.method == "GET":
+        poll = timestamped_poll(poll_timestamp)
+        form = NameAndSecretForm()
+        return render(request, 'nameandsecret.html',
+                      {'form': form, 'poll': poll})
+    else:
+        return HttpResponseBadRequest()
+
+
+def vote_on_poll(request: HttpRequest, poll_timestamp: str) -> HttpResponse:
+    if request.method == "GET":
+        submitted_form = NameAndSecretForm(request.GET)
+        if submitted_form.is_valid():
+            poll = timestamped_poll(poll_timestamp)
+            vote = find_or_create_vote(poll,
+                                       submitted_form.cleaned_data['user_name'],
+                                       submitted_form.cleaned_data['user_secret'])
+            form = MultipleChoiceCompleteVoteForm(instance=vote)
+            return render(request, "voteonpoll.html",
+                          {'form': form, 'path': request.get_full_path(force_append_slash=True)})
+        else:
+            return HttpResponseBadRequest()
+    elif request.method == 'POST':
+        poll = timestamped_poll(poll_timestamp)
+        if request.POST['_method'] == "addvote":
+            option = request.POST['option']
+            if option in poll.options:
+                return HttpResponseBadRequest()
+            else:
+                poll.options.append(option)
+                poll.save()
+                return redirect(request.POST['next'])
+        elif request.POST['_method'] == 'vote':
+            submitted_form = MultipleChoiceCompleteVoteForm(request.POST)
+            if submitted_form.is_valid() \
+                    and submitted_form.cleaned_data['poll'].timestamp.timestamp() == float(poll_timestamp):
+                validate_vote(submitted_form.cleaned_data['poll'], submitted_form.cleaned_data['user'],
+                              submitted_form.cleaned_data['user_secret'])
+                submitted_form.save()
+                return redirect(f"/polls/{poll_timestamp}/results")
+                # return JsonModelResponse(submitted_form.instance, 201)
+            else:
+                return HttpResponseBadRequest()
+        else:
+            return HttpResponseBadRequest()
+    else:
+        return HttpResponseBadRequest()
+
+
+def poll_results(request: HttpRequest, poll_timestamp: str) -> HttpResponse:
+    if request.method == "GET":
+        poll = timestamped_poll(poll_timestamp)
+        return render(request, "pollresults.html",
+                      {'poll': poll})

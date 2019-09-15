@@ -1,0 +1,11 @@
+<h1>{{ poll.question }}</h1>
+
+<ul>
+    {% for formatted_option in poll.formatted_votes %}
+        <li>{{ formatted_option }}</li>
+    {% endfor %}
+</ul>
+
+<form action="/polls/{{ poll.timestamp_str }}/" method="get" target="_self">
+    <input type="submit" value="Vote on Poll">
+</form>

@@ -28,7 +28,7 @@ SECRET_KEY = os.environ.get("POLLS_SECRET_KEY", "")
 DEBUG = True
 DEBUG_PROPAGATE_EXCEPTIONS = DEBUG
 
-ALLOWED_HOSTS = [os.environ.get("POLLS_HOST", "localhost")]
+ALLOWED_HOSTS = os.environ.get("POLLS_HOST", "localhost;127.0.0.1").split(';')
 
 # Application definition
 
