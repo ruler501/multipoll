@@ -521,9 +521,9 @@ def delete_distributedpoll(request: HttpRequest, poll_name: str) -> HttpResponse
 
     return HttpResponse()
 
-def JsonModelResponse(model: models.Model, status_code: int = 200, location: str = None, request: HttpRequest = None) -> JsonResponse:
-    serialized = serializers.serialize('python', [model])
-    response = JsonResponse(serialized[0])
+def JsonModelResponse(model: models.Model, status_code: int = 200, location: str = None, request: HttpRequest = None) -> HttpResponse:
+    serialized = serializers.serialize('json', [model])
+    response = HttpResponse(serialized[1:-1])
     response.status_code = status_code
     if location:
         if request:
