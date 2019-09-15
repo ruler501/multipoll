@@ -99,8 +99,7 @@ class Poll(models.Model):
 
     @property
     def timestamp_str(self):
-        result = str(self.timestamp.replace(tzinfo=datetime.timezone.utc).timestamp())
-        print(f'timestamp_str: {result}')
+        result = TimestampField.to_python_static(self.timestamp)
         return result
 
     @property

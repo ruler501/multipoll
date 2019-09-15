@@ -532,6 +532,7 @@ def JsonModelResponse(model: models.Model, status_code: int = 200, location: str
             response["Location"] = location
     return response
 
+
 def create_poll(request: HttpRequest) -> HttpResponse:
     if request.method == "POST":
         poll_data = json.loads(request.body)
