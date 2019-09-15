@@ -34,6 +34,7 @@ ALLOWED_HOSTS = os.environ.get("POLLS_HOST", "localhost;127.0.0.1").split(';')
 
 INSTALLED_APPS = (
     'main',
+    'django_extensions',
 )
 
 MIDDLEWARE_CLASSES = (
