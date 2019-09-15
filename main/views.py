@@ -12,13 +12,13 @@ from typing import Callable, Dict, Iterable, List, Optional, Tuple, TypeVar, Set
 
 import requests
 from django.core import serializers
-from django.core.exceptions import PermissionDenied
 from django.db import IntegrityError, models
-from django.http import HttpRequest, HttpResponse, HttpResponseBadRequest, Http404, JsonResponse
+from django.http import HttpRequest, HttpResponse, HttpResponseBadRequest, Http404
 from django.shortcuts import get_object_or_404, render, redirect
 from django.views.decorators.csrf import csrf_exempt
 
-from main.models import Block, DistributedPoll, Poll, Question, Response, User, Vote, CompleteVote, validate_vote
+from main.models import Block, DistributedPoll, Poll, Question, Response, User, Vote, CompleteVote, validate_vote, \
+    TimestampField
 from main.forms import NameAndSecretForm, MultipleChoiceCompleteVoteForm
 
 T = TypeVar('T')
@@ -57,8 +57,8 @@ client_secret = os.environ.get("POLLS_CLIENT_SECRET", "")
 bot_secret = os.environ.get("POLLS_BOT_SECRET", "")
 
 
-def add_poll(timestamp: str, channel: str, question: str, options: List[str]) -> Poll:
-    poll = Poll(timestamp=timestamp, channel=channel, question=question, options=options)
+def add_poll(channel: str, question: str, options: List[str]) -> Poll:
+    poll = Poll(channel=channel, question=question, options=options)
     poll.save()
     return poll
 
@@ -99,8 +99,8 @@ def order_options(options: List[str], votes: List[List[str]]) -> Tuple[List[str]
     return options, votes
 
 
-def format_text(question: str, options: List[str], votes: List[List[str]]) -> str:
-    text = "*" + question + "*\n\n"
+def format_text(question: str, options: List[str], votes: List[List[str]], location: str) -> str:
+    text = f"*{question}*\n{location}\n"
     for index, option in enumerate(options):
         to_add = '(' + str(len(votes[index])) + ") " + option
         to_add += ' ' + ', '.join([f'@{username}' for username in votes[index]])
@@ -229,7 +229,7 @@ def post_message(channel: str, message: str, attachments: Optional[str] = None, 
         "icon_url": "https://simplepoll.rocks/static/main/simplepolllogo-colors.png",
         "attachments": attachments
     }
-    headers = {"Authorization": f"Bearer {client_secret if use_client_secret else bot_secret}"}
+    headers = {"Authorization": f"Bearer {client_secret if use_client_secret else bot_secret}", "Content-Type": "application/json; charset=utf-8"}
     text_response = requests.post(post_message_url, headers=headers, json=body_dict)
     logger.info('Post Response Body: %s', text_response.content)
     text_response.raise_for_status()
@@ -257,12 +257,12 @@ def update_message(channel: str, timestamp: str, text: str, attachments: Optiona
 def post_question(channel: str, question: Question) -> None:
     attachments = format_attachments(question.options, "qo_" + question.id, False)
     responses = question.responses
-    text = format_text(question.question, question.options, responses)
+    text = format_text(question.question, question.options, responses, '')
     post_message(channel, text, attachments, False)
 
 
 def poll_to_slack_timestamp(poll: Poll) -> str:
-    timestamp_datetime: datetime.datetime = poll.timestamp
+    timestamp_datetime: datetime.datetime = TimestampField.from_db_value_static(poll.timestamp)
     logger.info("Timestamp: (%s) - %s", timestamp_datetime, type(timestamp_datetime))
     if isinstance(timestamp_datetime, datetime.datetime):
         timestamp_float = timestamp_datetime.replace(tzinfo=timezone.utc).timestamp()
@@ -272,20 +272,6 @@ def poll_to_slack_timestamp(poll: Poll) -> str:
         raise TypeError("timestamp_datetime was not a datetime as expected.")
 
     return timestamp
-
-
-def post_poll(channel: str, poll: Poll) -> str:
-    text = format_text(poll.question, poll.options, poll.votes)
-    attachments = format_attachments(poll.options)
-    return post_message(channel, text, attachments)
-
-
-def update_poll(channel: str, poll: Poll) -> None:
-    options, votes = order_options(poll.options, poll.votes)
-    text = format_text(poll.question, options, votes)
-    attachments = format_attachments(poll.options)
-    timestamp = poll_to_slack_timestamp(poll)
-    update_message(channel, timestamp, text, attachments)
 
 
 def check_token(request: HttpRequest) -> Optional[HttpResponse]:
@@ -345,7 +331,7 @@ def interactive_button(request: HttpRequest) -> HttpResponse:
         poll.options.append(payload['submission']['new_option'])
         poll.options = unique_list(poll.options)
         poll.save()
-        update_poll(payload['channel']['id'], poll)
+        # update_poll(payload['channel']['id'], poll)
     elif payload['callback_id'] == "options":
         if payload["actions"][0]["name"] == "addMore":
             create_dialog(payload)
@@ -358,7 +344,7 @@ def interactive_button(request: HttpRequest) -> HttpResponse:
                 vote.delete()
             else:
                 Vote.objects.create(poll=poll, option=voted_index, user=user)
-            update_poll(payload['channel']['id'], poll)
+            # update_poll(payload['channel']['id'], poll)
     elif payload['callback_id'].startswith('qo_'):
         if payload['actions'][0]['name'].startswith('qo_'):
             question_id = payload['actions'][0]['name'][3:]
@@ -372,7 +358,7 @@ def interactive_button(request: HttpRequest) -> HttpResponse:
                 response_index = question.options.index(payload['actions'][0]['value'])
                 Response.objects.create(option=response_index, question=question, user=user)
             attachments = format_attachments(question.options, "qo_" + question.id, False)
-            text = format_text(question.question, question.options, question.responses)
+            text = format_text(question.question, question.options, question.responses, '')
             timestamp = payload['original_message']['ts']
             update_message(payload['channel']['id'], timestamp, text, attachments, False)
 
@@ -403,10 +389,7 @@ def slash_poll(request: HttpRequest) -> HttpResponse:
     # all data ready for initial message at this point
     logger.debug("Options: %s", options)
 
-    text = format_text(question, options, votes=[[] for _ in options])
-    attachments = format_attachments(options)
-    timestamp = post_message(channel, text, attachments)
-    add_poll(timestamp, channel, question, options)
+    add_poll(channel, question, options)
 
     return HttpResponse()  # Empty 200 HTTP response, to not display any additional content in Slack
 
@@ -542,7 +525,7 @@ def create_poll(request: HttpRequest) -> HttpResponse:
         question = poll_data['question']
         options = poll_data['options']
         channel = poll_data.get('channel', os.environ.get('POLLS_DEFAULT_CHANNEL', ''))
-        poll = Poll(timestamp=timestamp, question=question, options=options, channel=channel)
+        poll = add_poll(question=question, options=options, channel=channel)
         poll.save()
         return JsonModelResponse(poll, 201, f'/polls/{poll.timestamp_str}/', request)
     else:

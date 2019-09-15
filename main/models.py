@@ -1,15 +1,19 @@
 import copy
 import datetime
 import logging
+import os
 import random
 import string
-from typing import Dict, List, Union, Any, Optional, Callable
+from typing import Dict, List, Union, Any, Optional
 
 from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError, PermissionDenied
 from django.db import models
 
-from django import forms
+
+def absolute_url_without_request(location: str) -> str:
+    current_site = os.environ.get("POLLS_HOST", "localhost:8000")
+    return f"https://{current_site}{location}"
 
 
 class TimestampField(models.CharField):
@@ -104,11 +108,14 @@ class Poll(models.Model):
 
     @property
     def votes(self) -> List[List[str]]:
-        partial = self.partial_votes
-        complete = self.complete_votes
-        votes = [a + b for a, b in zip(partial, complete)]
-        votes = [sorted(option) for option in votes]
-        return votes
+        if self.timestamp:
+            partial = self.partial_votes
+            complete = self.complete_votes
+            votes = [a + b for a, b in zip(partial, complete)]
+            votes = [sorted(option) for option in votes]
+            return votes
+        else:
+            return [[] for _ in self.options]
 
     @property
     def formatted_votes(self) -> List[str]:
@@ -142,7 +149,34 @@ class Poll(models.Model):
         indexes = [models.Index(fields=['timestamp'])]
 
     def get_absolute_url(self):
-        return f"/polls/{self.timestamp}/"
+        if self.timestamp:
+            return absolute_url_without_request(f"/polls/{TimestampField.to_python_static(self.timestamp)}/")
+        else:
+            return ''
+
+    def post_poll(self) -> str:
+        from main.views import format_text, format_attachments, post_message
+        text = format_text(self.question, self.options, self.votes, self.get_absolute_url())
+        attachments = format_attachments(self.options)
+        return post_message(self.channel, text, attachments)
+
+    def update_poll(self) -> None:
+        from main.views import format_text, format_attachments, order_options, poll_to_slack_timestamp, update_message
+        options, votes = order_options(self.options, self.votes)
+        text = format_text(self.question, options, votes, self.get_absolute_url())
+        attachments = format_attachments(self.options)
+        timestamp = poll_to_slack_timestamp(self)
+        update_message(self.channel, timestamp, text, attachments)
+
+    def save(self, force_insert=False, force_update=False, using=None,
+             update_fields=None):
+        if not self.timestamp:
+            ts = self.post_poll()
+            self.timestamp = TimestampField.from_db_value_static(ts)
+
+        super().save(force_insert, force_update, using, update_fields)
+
+        self.update_poll()
 
 
 def default_options_inner():
@@ -180,6 +214,12 @@ class CompleteVote(models.Model):
             raise ValidationError("Included duplicate or invalid values")
         our_value += [False] * (99 - len(our_value))
         self.options_inner = our_value
+
+    def save(self, force_insert=False, force_update=False, using=None,
+             update_fields=None):
+        super().save(force_insert, force_update, using, update_fields)
+
+        self.poll.update_poll()
 
 
 def validate_vote(poll: Poll, user: User, user_secret: str):
