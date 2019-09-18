@@ -91,7 +91,7 @@ if os.environ.get("ELASTIC_APM", None):
     ELASTIC_APM = {
         # Set required service name. Allowed characters:
       # a-z, A-Z, 0-9, -, _, and space
-      'SERVICE_NAME': 'simplepoll',
+      'SERVICE_NAME': 'multipoll',
 
       # Set custom APM Server URL (default: http://localhost:8200)
       'SERVER_URL': 'http://localhost:8200',

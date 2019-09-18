@@ -1,10 +1,11 @@
 dj-database-url==0.5.0
-Django==2.2.1
+Django==2.2.5
 django-extensions==2.2.1
 django-typed-models==0.9.0
 elastic-apm==5.1.2
 gunicorn==19.9.0
-psycopg2==2.8.2
+json-logging-py==0.2
+psycopg2==2.8.3
 python3-logstash==0.4.80
-requests==2.21.0
+requests==2.22.0
 wn==0.0.22
