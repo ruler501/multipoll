@@ -28,7 +28,7 @@ SECRET_KEY = os.environ.get("POLLS_SECRET_KEY", "")
 DEBUG = True
 DEBUG_PROPAGATE_EXCEPTIONS = DEBUG
 
-ALLOWED_HOSTS = os.environ.get("POLLS_HOST", "localhost;127.0.0.1").split(';')
+ALLOWED_HOSTS = os.environ.get("MPOLLS_HOST", "localhost;127.0.0.1").split(';')
 
 # Application definition
 
@@ -91,7 +91,7 @@ if os.environ.get("ELASTIC_APM", None):
     ELASTIC_APM = {
         # Set required service name. Allowed characters:
       # a-z, A-Z, 0-9, -, _, and space
-      'SERVICE_NAME': 'simplepoll',
+      'SERVICE_NAME': 'multipoll',
 
       # Set custom APM Server URL (default: http://localhost:8200)
       'SERVER_URL': 'http://localhost:8200',
@@ -103,16 +103,16 @@ if os.environ.get("ELASTIC_APM", None):
 # Honor the 'X-Forwarded-Proto' header for request.is_secure()
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-REMOTE_DATABASE = os.environ.get("POLLS_DATABASE_URL", None)
-POLLS_DATABASE = os.environ.get("POLLS_DATABASE", "local").lower()
+REMOTE_DATABASE = os.environ.get("MPOLLS_DATABASE_URL", None)
+POLLS_DATABASE = os.environ.get("MPOLLS_DATABASE", "local").lower()
 if POLLS_DATABASE != "local" and POLLS_DATABASE != "dj" and REMOTE_DATABASE is not None:
     DATABASES['default'] = {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get("POLLS_DATABASE_NAME", None),
-        'USER': os.environ.get("POLLS_DATABASE_USERNAME", None),
-        'PASSWORD': os.environ.get("POLLS_DATABASE_PASSWORD", None),
+        'NAME': os.environ.get("MPOLLS_DATABASE_NAME", None),
+        'USER': os.environ.get("MPOLLS_DATABASE_USERNAME", None),
+        'PASSWORD': os.environ.get("MPOLLS_DATABASE_PASSWORD", None),
         'HOST': REMOTE_DATABASE,
-        'PORT': os.environ.get("POLLS_DATABASE_PORT", None)
+        'PORT': os.environ.get("MPOLLS_DATABASE_PORT", None)
     }
 else:
     # Parse database configuration from $DATABASE_URL
