@@ -4,30 +4,46 @@ import math
 
 from typing import List, Tuple, TypeVar, Type, Optional
 
+from django import forms
 from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import PermissionDenied
 from django.db import models
 from django.db.models import QuerySet, Manager
 from django.db.models.base import ModelBase
 from django.shortcuts import get_object_or_404
+from typedmodels.models import TypedModel
 
 from multipoll import slack
 from multipoll.electoralsystems import get_electoral_system
 from multipoll.models.fields import TimestampField
 from multipoll.models.user import User
-from multipoll.utils import Numeric
+from multipoll.utils import Numeric, absolute_url_without_request
 
 Vote = Tuple[User, Numeric]
+VForm = TypeVar('VForm', bound=forms.ModelForm)
 
 
-class PollBase(models.Model):
+class PollBase(TypedModel):
     fullvote_set: QuerySet
     partialvote_set: QuerySet
+    FullVoteType: Type['FullVote']
+    PartialVoteType: Type['PartialVote']
+
     MAX_OPTIONS = 99
+
     timestamp: datetime.datetime = TimestampField(primary_key=True)
     channel: str = models.CharField(max_length=9, null=False)
     question: str = models.CharField(max_length=200, null=False)
     options: List[str] = ArrayField(models.CharField(max_length=100, null=False), null=False, size=MAX_OPTIONS)
+
+    class Meta:
+        abstract = True
+        get_latest_by = "timestamp"
+        ordering = ("timestamp",)
+        indexes = (models.Index(fields=('timestamp',)),)
+
+    supported_systems = ("approval",)
+    default_system = "approval"
 
     @property
     def timestamp_str(self):
@@ -48,7 +64,6 @@ class PollBase(models.Model):
     def formatted_votes(self) -> List[str]:
         options_with_votes = self.order_options(self.options, self.all_votes)
         options = list(zip(*options_with_votes))[0]
-        print(options)
         # noinspection PyTypeChecker
         return [f"({self.calculate_weight(i, options)}) {ovs[0]} ({', '.join([f'{u}[{w}]' for u, w in ovs[1]])})"
                 for i, ovs in enumerate(options_with_votes)]
@@ -84,16 +99,11 @@ class PollBase(models.Model):
         system = get_electoral_system(cls.default_system)
         return system.calculate_weight(ind, votes)
 
-    class Meta:
-        abstract = True
-        get_latest_by = "timestamp"
-        ordering = ("timestamp",)
-        indexes = (models.Index(fields=('timestamp',)),)
-
-    supported_systems = ("approval",)
-    default_system = "approval"
-
-    def get_absolute_url(self) -> str: ...
+    def get_absolute_url(self) -> Optional[str]:
+        if self.timestamp:
+            return absolute_url_without_request(f"/polls/{self.timestamp_str}/")
+        else:
+            return None
 
     @staticmethod
     def format_attachments(options: List[str], options_name: str = "option", include_add_more: bool = True) -> str:
@@ -167,9 +177,14 @@ class FullVoteMetaClass(ModelBase):
             setattr(_meta, "constraints", (models.UniqueConstraint(fields=('poll', 'user'),
                                                                    name=f'Single{name}Copy'),))
 
+            assert 'get_form' in attrs
+
         bases = bases + (models.Model,)
 
-        return super().__new__(mcs, name, bases, attrs)
+        newtype = super().__new__(mcs, name, bases, attrs)
+        if parents:
+            poll_model = getattr(newtype, "poll_model")
+            setattr(poll_model, "FullVoteType", newtype)
 
 
 class FullVoteBase(metaclass=FullVoteMetaClass):
@@ -190,8 +205,11 @@ class FullVoteBase(metaclass=FullVoteMetaClass):
 
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None) -> None:
+        # noinspection PyUnresolvedReferences
         super().save(force_insert, force_update, using, update_fields)
         self.poll.update_poll()
+
+    def get_form(self) -> VForm: ...
 
     @classmethod
     def validate_and_find_existing(cls: Type['FullVote'], poll: Poll, user: User, user_secret: str) \
@@ -235,10 +253,14 @@ class PartialVoteMetaClass(ModelBase):
             setattr(_meta, "indexes", (models.Index(fields=('poll',)),))
             setattr(_meta, "ordering", ('poll', 'option', 'user'))
             assert 'weight' in attrs
+            assert 'get_form' in attrs
 
         bases = bases + (models.Model,)
 
-        return super().__new__(mcs, name, bases, attrs)
+        newtype = super().__new__(mcs, name, bases, attrs)
+        if parents:
+            poll_model = getattr(newtype, "poll_model")
+            setattr(poll_model, "PartialVoteType", newtype)
 
 
 class PartialVoteBase(metaclass=PartialVoteMetaClass):
@@ -257,8 +279,11 @@ class PartialVoteBase(metaclass=PartialVoteMetaClass):
 
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None) -> None:
+        # noinspection PyUnresolvedReferences
         super().save(force_insert, force_update, using, update_fields)
         self.poll.update_poll()
+
+    def get_form(self) -> VForm: ...
 
 
 PartialVote = TypeVar('PartialVote', bound=PartialVoteBase)

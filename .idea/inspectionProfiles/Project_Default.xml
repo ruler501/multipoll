@@ -11,12 +11,6 @@
     <inspection_tool class="PyUnresolvedReferencesInspection" enabled="true" level="WARNING" enabled_by_default="true">
       <option name="ignoredIdentifiers">
         <list>
-          <option value="object.save" />
-          <option value="main.models.pollbase.VoteBase.poll" />
-          <option value="main.models.pollbase.VoteBase.objects" />
-          <option value="main.models.multipoll.MultiPoll.fullmultivote_set" />
-          <option value="main.models.multipoll.MultiPoll.partialmultivote_set" />
-          <option value="multipoll.models.approvalpoll.FullApprovalVote._state" />
         </list>
       </option>
     </inspection_tool>

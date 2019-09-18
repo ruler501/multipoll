@@ -1,24 +1,17 @@
 from django.db import models
 
-from multipoll.models.pollbase import PollBase, FullVoteBase, PartialVoteBase
-from multipoll.utils import absolute_url_without_request
+from multipoll.models.pollbase import PollBase, FullVoteBase, PartialVoteBase, VForm
 
 
 class MultiPoll(PollBase):
     class Meta(PollBase.Meta):
-        abstract = False
+        proxy = True
 
     class PollMeta:
         weight_field = models.SmallIntegerField(null=False)
 
     supported_systems = ("approval", "borda")
     default_system = "borda"
-
-    def get_absolute_url(self):
-        if self.timestamp:
-            return absolute_url_without_request(f"/mpolls/{self.timestamp_str}/")
-        else:
-            return None
 
 
 class FullMultiVote(FullVoteBase):
@@ -27,9 +20,15 @@ class FullMultiVote(FullVoteBase):
 
     poll_model = MultiPoll
 
+    def get_form(self) -> VForm:
+        return None
+
 
 class PartialMultiVote(PartialVoteBase):
     class Meta(PartialVoteBase.Meta):
         abstract = False
 
     poll_model = MultiPoll
+
+    def get_form(self) -> VForm:
+        return None

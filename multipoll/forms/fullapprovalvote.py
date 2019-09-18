@@ -7,6 +7,7 @@ from multipoll.models.approvalpoll import FullApprovalVote, ApprovalPoll
 
 class FullApprovalVoteForm(forms.ModelForm):
     options = forms.MultipleChoiceField(choices=tuple(), required=False, widget=forms.CheckboxSelectMultiple())
+    _method = forms.CharField(hidden=True, initial="approvalvote")
 
     class Meta:
         model = FullApprovalVote
@@ -22,10 +23,8 @@ class FullApprovalVoteForm(forms.ModelForm):
             kwargs['data'] = args[0]
             args = tuple(args[1:])
         super().__init__(*args, **kwargs)
-        if 'data' in kwargs:
-            print(kwargs['data'])
-            if 'poll' in kwargs['data']:
-                setattr(self.instance, 'poll', ApprovalPoll.timestamped(kwargs['data']['poll']))
+        if 'data' in kwargs and 'poll' in kwargs['data']:
+            setattr(self.instance, 'poll', ApprovalPoll.timestamped(kwargs['data']['poll']))
         if not self.instance.poll:
             raise SuspiciousOperation("Must define poll")
         self.fields['options'].choices = ((x, x) for x in self.instance.poll.options)
@@ -33,14 +32,13 @@ class FullApprovalVoteForm(forms.ModelForm):
             options = kwargs['data']['options']
             if isinstance(kwargs['data'], QueryDict):
                 options = kwargs['data'].getlist('options')
-            print(f"kwargs.data.options {options}")
             self.instance.options = options
         self.options = self.instance.options
-        print(self.options)
 
-    # noinspection PyProtectedMember
     def save(self, commit=True):
         if self.errors:
+            # noinspection PyProtectedMember
+            # noinspection PyUnresolvedReferences
             raise ValueError(
                 "The %s could not be %s because the data didn't validate." % (
                     self.instance._meta.object_name,
@@ -51,9 +49,7 @@ class FullApprovalVoteForm(forms.ModelForm):
                                                                self.instance.user_secret)
         if existing:
             self.instance = existing
-        print(self.data['options'])
         self.instance.options = self.options
-        print(self.instance.options)
         super().save(commit)
 
     def validate_unique(self):

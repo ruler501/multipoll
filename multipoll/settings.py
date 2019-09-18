@@ -22,13 +22,13 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # See https://docs.djangoproject.com/en/1.8/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get("POLLS_SECRET_KEY", "")
+SECRET_KEY = os.environ.get("MPOLLS_SECRET_KEY", "")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 DEBUG_PROPAGATE_EXCEPTIONS = DEBUG
 
-ALLOWED_HOSTS = os.environ.get("POLLS_HOST", "localhost;127.0.0.1").split(';')
+ALLOWED_HOSTS = os.environ.get("MPOLLS_HOST", "localhost;127.0.0.1").split(';')
 
 # Application definition
 
@@ -98,44 +98,43 @@ if os.environ.get("ELASTIC_APM", None):
 
       'DEBUG': True
     }
-
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'logstash': {
-            'level': 'DEBUG',
-            'class': 'logstash.TCPLogstashHandler',
-            'host': 'localhost',
-            'port': 5959, # Default value: 5959
-            'version': 0, # Version of logstash event schema. Default value: 0 (for backward compatibility of the library)
-            'message_type': 'simplepoll',  # 'type' field in logstash message. Default value: 'logstash'.
-            'fqdn': False, # Fully qualified domain name. Default value: false.
-            'tags': ['django'], # list of tags. Default: None.
+    LOGGING = {
+        'version': 1,
+        'disable_existing_loggers': False,
+        'handlers': {
+            'logstash': {
+                'level': 'DEBUG',
+                'class': 'logstash.TCPLogstashHandler',
+                'host': 'localhost',
+                'port': 5959, # Default value: 5959
+                'version': 0, # Version of logstash event schema. Default value: 0 (for backward compatibility of the library)
+                'message_type': 'simplepoll',  # 'type' field in logstash message. Default value: 'logstash'.
+                'fqdn': False, # Fully qualified domain name. Default value: false.
+                'tags': ['django'], # list of tags. Default: None.
+            },
         },
-    },
-    'loggers': {
-        'django': {
-            'handlers': ['logstash'],
-            'level': 'DEBUG',
-            'propagate': True,
-        },
+        'loggers': {
+            'django': {
+                'handlers': ['logstash'],
+                'level': 'DEBUG',
+                'propagate': True,
+            },
+        }
     }
-}
 
 # Honor the 'X-Forwarded-Proto' header for request.is_secure()
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-REMOTE_DATABASE = os.environ.get("POLLS_DATABASE_URL", None)
-POLLS_DATABASE = os.environ.get("POLLS_DATABASE", "local").lower()
+REMOTE_DATABASE = os.environ.get("MPOLLS_DATABASE_URL", None)
+POLLS_DATABASE = os.environ.get("MPOLLS_DATABASE", "local").lower()
 if POLLS_DATABASE != "local" and POLLS_DATABASE != "dj" and REMOTE_DATABASE is not None:
     DATABASES['default'] = {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get("POLLS_DATABASE_NAME", None),
-        'USER': os.environ.get("POLLS_DATABASE_USERNAME", None),
-        'PASSWORD': os.environ.get("POLLS_DATABASE_PASSWORD", None),
+        'NAME': os.environ.get("MPOLLS_DATABASE_NAME", None),
+        'USER': os.environ.get("MPOLLS_DATABASE_USERNAME", None),
+        'PASSWORD': os.environ.get("MPOLLS_DATABASE_PASSWORD", None),
         'HOST': REMOTE_DATABASE,
-        'PORT': os.environ.get("POLLS_DATABASE_PORT", None)
+        'PORT': os.environ.get("MPOLLS_DATABASE_PORT", None)
     }
 else:
     # Parse database configuration from $DATABASE_URL

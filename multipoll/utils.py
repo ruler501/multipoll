@@ -25,12 +25,12 @@ def set_log_level(key: str = 'POLLS_LOGLEVEL', default: str = "WARN") -> None:
 set_log_level()
 
 client_id = "4676884434.375651972439"
-client_secret = os.environ.get("POLLS_CLIENT_SECRET", "")
-bot_secret = os.environ.get("POLLS_BOT_SECRET", "")
+client_secret = os.environ.get("MPOLLS_CLIENT_SECRET", "")
+bot_secret = os.environ.get("MPOLLS_BOT_SECRET", "")
 
 
 def absolute_url_without_request(location: str) -> str:
-    current_site = os.environ.get("POLLS_HOST", "localhost:8000")
+    current_site = os.environ.get("MPOLLS_HOST", "localhost:8000")
     return f"https://{current_site}{location}"
 
 
