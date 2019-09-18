@@ -35,10 +35,13 @@ ALLOWED_HOSTS = os.environ.get("POLLS_HOST", "localhost;127.0.0.1").split(';')
 INSTALLED_APPS = (
     'main',
     'django_extensions',
+    'elasticapm.contrib.django'
 )
 
-MIDDLEWARE_CLASSES = (
+MIDDLEWARE = (
     'django.middleware.common.CommonMiddleware',
+    # To send performance metrics, add our tracing middleware:
+    'elasticapm.contrib.django.middleware.TracingMiddleware',
 )
 
 ROOT_URLCONF = 'simpleslackpoll.urls'
@@ -83,6 +86,18 @@ USE_I18N = True
 USE_L10N = True
 
 USE_TZ = True
+
+ELASTIC_APM = {
+    # Set required service name. Allowed characters:
+  # a-z, A-Z, 0-9, -, _, and space
+  'SERVICE_NAME': 'simplepoll',
+
+  # Set custom APM Server URL (default: http://localhost:8200)
+  'SERVER_URL': 'http://localhost:8200',
+
+  'DEBUG': True
+}
+
 
 # Honor the 'X-Forwarded-Proto' header for request.is_secure()
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
