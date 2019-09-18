@@ -1,5 +1,5 @@
 """
-simpleslackpoll URL Configuration.
+multipoll URL Configuration.
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/1.8/topics/http/urls/
@@ -17,15 +17,12 @@ Examples:
 """
 from django.conf.urls import url
 
-from main import views
+from multipoll import views
 
 urlpatterns = [
     url(r'^status/', views.server_status, name="status"),
     url(r'^interactive_button/', views.interactive_button, name="interactive_button"),
     url(r'^poll/', views.slash_poll, name="poll"),
-    url(r'^event_handling/', views.event_handling, name="event_handling"),
-    url(r'^dpoll/(?P<poll_name>\w+)/responses/$', views.poll_responses),
-    url(r'^dpoll/(?P<poll_name>\w+)/', views.delete_distributedpoll),
     url(r'^polls/(?P<poll_timestamp>\d+(\.\d+)?)/results', views.poll_results),
     url(r'^polls/(?P<poll_timestamp>\d+(\.\d+)?)/vote', views.vote_on_poll),
     url(r'^polls/(?P<poll_timestamp>\d+(\.\d+)?)/', views.view_poll),

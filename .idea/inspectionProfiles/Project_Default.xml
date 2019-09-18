@@ -1,13 +1,23 @@
 <component name="InspectionProjectProfileManager">
   <profile version="1.0">
     <option name="myName" value="Project Default" />
-    <inspection_tool class="PyPackageRequirementsInspection" enabled="true" level="WARNING" enabled_by_default="true">
-      <option name="ignoredPackages">
-        <value>
-          <list size="1">
-            <item index="0" class="java.lang.String" itemvalue="psycopg2" />
-          </list>
-        </value>
+    <inspection_tool class="PyPep8Inspection" enabled="true" level="WEAK WARNING" enabled_by_default="true">
+      <option name="ignoredErrors">
+        <list>
+          <option value="W292" />
+        </list>
+      </option>
+    </inspection_tool>
+    <inspection_tool class="PyUnresolvedReferencesInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ignoredIdentifiers">
+        <list>
+          <option value="object.save" />
+          <option value="main.models.pollbase.VoteBase.poll" />
+          <option value="main.models.pollbase.VoteBase.objects" />
+          <option value="main.models.multipoll.MultiPoll.fullmultivote_set" />
+          <option value="main.models.multipoll.MultiPoll.partialmultivote_set" />
+          <option value="multipoll.models.approvalpoll.FullApprovalVote._state" />
+        </list>
       </option>
     </inspection_tool>
   </profile>

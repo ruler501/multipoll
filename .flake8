@@ -1,4 +1,4 @@
 [flake8]
-application-import-names = main,simpleslackpoll
+application-import-names = multipoll
 exclude = .venv,main/migrations
 import-order-style = smarkets
