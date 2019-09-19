@@ -1,7 +1,7 @@
 import logging
 import os
 
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 
 import requests
 
@@ -31,19 +31,16 @@ def _create_headers(use_client_secret: bool = True):
             "Content-Type": "application/json; charset=utf-8"}
 
 
-def create_dialog(payload: Dict, use_client_secret: bool = True) -> None:
+def create_dialog(trigger_id: str, title: str, state: str, callback_id: str, elements: List[Dict[str, str]],
+                  use_client_secret: bool = True) -> None:
     method_url = 'https://slack.com/api/dialog.open'
     method_params = {
-        "trigger_id": payload['trigger_id'],
+        "trigger_id": trigger_id,
         "dialog": {
-            "title": "Add an option",
-            "state": payload['original_message']['ts'],
-            "callback_id": "newOption",
-            "elements": [{
-                "type": "text",
-                "label": "New Option",
-                "name": "new_option"
-            }]
+            "title": title,
+            "state": state,
+            "callback_id": callback_id,
+            "elements": elements
         }
     }
     logger.info("Params: %s", method_params)

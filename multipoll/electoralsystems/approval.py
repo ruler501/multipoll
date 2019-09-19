@@ -1,7 +1,6 @@
-from typing import List, Tuple
+from typing import List
 
 from multipoll.electoralsystems.registry import ElectoralSystem, Vote
-from multipoll.utils import Numeric
 
 
 class ApprovalVoting(ElectoralSystem):
@@ -9,5 +8,5 @@ class ApprovalVoting(ElectoralSystem):
     label = "Approval"
 
     @classmethod
-    def calculate_weight(cls, ind: int, votes: List[List[Vote]]) -> Numeric:
-        return  len([1 for _, w in votes[ind] if w != 0])
+    def calculate_weight(cls, ind: int, votes: List[List[Vote]]) -> int:
+        return len([1 for _, w in votes[ind] if w is not None and w != 0])

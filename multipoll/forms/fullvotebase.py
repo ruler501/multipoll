@@ -4,8 +4,7 @@ from django import forms
 from django.core.exceptions import SuspiciousOperation
 
 from multipoll.models import Poll, FullVote, User
-from multipoll.utils import Numeric, ClassProperty
-
+from multipoll.utils import ClassProperty, OptNumeric
 
 FormField = TypeVar('FormField', bound=forms.Field)
 
@@ -79,14 +78,19 @@ class FullVoteFormBase(forms.ModelForm):
                                                               self.instance.user_secret)
         if existing:
             self.instance = existing
-        weights: List[Numeric] = [0 for _ in range(self.poll_model.MAX_OPTIONS)]
-        for field_name, field in self.fields.items():
+        weights: List[OptNumeric] = [None for _ in range(self.poll_model.MAX_OPTIONS)]
+        for field_name in self.fields:
             if field_name.startswith("option"):
                 ind = int(field_name[len("option-"):])
-                weights[ind] = field.clean()
+                weights[ind] = self.sanitize_weight(self.data.get(field_name, None))
         self.instance.weights = weights
+        print(weights)
         # noinspection PyUnresolvedReferences
         return super().save(commit)
+
+    # noinspection PyMethodMayBeStatic
+    def sanitize_weight(self, weight: OptNumeric) -> OptNumeric:
+        return weight
 
     # noinspection PyMethodMayBeStatic
     def validate_unique(self):

@@ -1,9 +1,9 @@
 import abc
 from typing import List, Tuple
 
-from multipoll.utils import Numeric
+from multipoll.utils import Numeric, OptNumeric
 
-Vote = Tuple['User', Numeric]
+Vote = Tuple['multipoll.models.User', OptNumeric]
 
 
 class ElectoralSystemMeta(abc.ABCMeta):

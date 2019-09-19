@@ -1,3 +1,5 @@
+from typing import Type, Dict
+
 from django.db import models
 
 from multipoll.models.pollbase import PollBase, FullVoteBase, PartialVoteBase, VForm
@@ -5,10 +7,15 @@ from multipoll.models.pollbase import PollBase, FullVoteBase, PartialVoteBase, V
 
 class MultiPoll(PollBase):
     class PollMeta:
-        weight_field = models.SmallIntegerField(null=False)
+        weight_field = models.SmallIntegerField(null=True)
 
     supported_systems = ("approval", "borda")
     default_system = "borda"
+
+    @classmethod
+    def create_attachment_for_option(cls: Type['MultiPoll'], option: str) -> Dict[str, str]:
+        attach = {"name": "numeric_option", "text": option, "type": "button", "value": option}
+        return attach
 
 
 class FullMultiVote(FullVoteBase):

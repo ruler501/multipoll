@@ -2,7 +2,7 @@ import datetime
 import json
 import math
 
-from typing import List, Tuple, TypeVar, Type, Optional
+from typing import List, Tuple, TypeVar, Type, Optional, Dict
 
 from django import forms
 from django.contrib.postgres.fields import ArrayField
@@ -17,9 +17,9 @@ from multipoll import slack
 from multipoll.electoralsystems import get_electoral_system
 from multipoll.models.fields import TimestampField
 from multipoll.models.user import User
-from multipoll.utils import Numeric, absolute_url_without_request
+from multipoll.utils import Numeric, absolute_url_without_request, OptNumeric
 
-Vote = Tuple[User, Numeric]
+Vote = Tuple[User, OptNumeric]
 VForm = TypeVar('VForm', bound=forms.ModelForm)
 ModelField = TypeVar('ModelField', bound=models.Field)
 
@@ -108,17 +108,20 @@ class PollBase(TypedModel):
         else:
             return None
 
-    @staticmethod
-    def format_attachments(options: List[str], options_name: str = "option", include_add_more: bool = True) -> str:
+    @classmethod
+    def create_attachment_for_option(cls: Type['Poll'], option: str) -> Dict[str, str]: ...
+
+    @classmethod
+    def format_attachments(cls: Type['Poll'], options: List[str], include_add_more: bool = True) -> str:
         actions = []
         for option in options:
-            attach = {"name": options_name, "text": option, "type": "button", "value": option}
+            attach = cls.create_attachment_for_option(option)
             actions.append(attach)
         if include_add_more:
             actions.append({"name": "addMore", "text": "Add More", "type": "button", "value": "Add More"})
         attachments = []
         for i in range(int(math.ceil(len(actions) / 5.0))):
-            attachment = {"text": "", "callback_id": options_name + "s",
+            attachment = {"text": "", "callback_id": "options",
                           "attachment_type": "default", "actions": actions[5 * i: 5 * i + 5]}
             attachments.append(attachment)
 
@@ -159,8 +162,8 @@ class PollBase(TypedModel):
 Poll = TypeVar('Poll', bound=PollBase)
 
 
-def default_options_inner():
-    return [0 for _ in range(PollBase.MAX_OPTIONS)]
+def default_options_inner() -> List[OptNumeric]:
+    return [None for _ in range(PollBase.MAX_OPTIONS)]
 
 
 class FullVoteMetaClass(ModelBase):
@@ -193,7 +196,7 @@ class FullVoteMetaClass(ModelBase):
 class FullVoteBase(metaclass=FullVoteMetaClass):
     objects: Manager
     poll: Poll
-    weights: List[Numeric]
+    weights: List[OptNumeric]
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=False)
     user_secret = models.CharField(max_length=11, null=True)
 
@@ -203,8 +206,9 @@ class FullVoteBase(metaclass=FullVoteMetaClass):
         indexes = (models.Index(fields=('poll',)),)
 
     @property
-    def options(self) -> List[Tuple[str, Numeric]]:
-        return list(zip(self.poll.options, self.weights))
+    def options(self) -> List[Tuple[str, OptNumeric]]:
+        poll: PollBase = self.poll
+        return list(zip(poll.options, self.weights))
 
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None) -> None:
@@ -289,6 +293,13 @@ class PartialVoteBase(metaclass=PartialVoteMetaClass):
         self.poll.update_poll()
 
     def get_form(self) -> VForm: ...
+
+    @classmethod
+    def add(cls: Type['PartialVote'], poll: Poll, user: User, option: int, weight: Numeric) -> 'PartialVote':
+        partial_vote = cls.objects.get_or_create(poll=poll, user=user, option=option)[0]
+        partial_vote.weight = weight
+        partial_vote.save()
+        return partial_vote
 
 
 PartialVote = TypeVar('PartialVote', bound=PartialVoteBase)

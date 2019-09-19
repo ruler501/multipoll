@@ -1,11 +1,12 @@
 import logging
 import os
 
-from typing import TypeVar, List, Callable, Iterable, Set
+from typing import TypeVar, List, Callable, Iterable, Set, Optional
 
 T = TypeVar('T')
 U = TypeVar('U')
 Numeric = TypeVar('Numeric', bool, int, float)
+OptNumeric = Optional[Numeric]
 
 logger = logging.getLogger(__name__)
 

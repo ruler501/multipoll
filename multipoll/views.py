@@ -58,19 +58,44 @@ def interactive_button(request: HttpRequest) -> HttpResponse:
         poll.options.append(payload['submission']['new_option'])
         poll.options = utils.unique_list(poll.options)
         poll.save()
-        # update_poll(payload['channel']['id'], poll)
+    elif payload['callback_id'] == 'numeric_vote':
+        ts, ind_str = payload.split('\n')
+        poll = PollBase.timestamped(ts)
+        user = User.find_or_create("@" + payload['user']["name"])
+        poll.PartialVoteType.add(poll=poll, user=user, ind=int(ind_str), weight=payload['submission']['weight'])
     elif payload['callback_id'] == "options":
-        if payload["actions"][0]["name"] == "addMore":
-            slack.create_dialog(payload)
-        elif payload['actions'][0]["name"] == "option":
+        event = payload["actions"][0]
+        if event["name"] == "addMore":
+            elements = [{
+                "type": "text",
+                "label": "New Option",
+                "name": "new_option"
+            }]
+            slack.create_dialog(payload['trigger_id'], "Add an Option", payload['original_message']['ts'], "newOption",
+                                elements)
+        elif event["name"] == "bool_option":
             poll = PollBase.timestamped(payload['original_message']['ts'])
-            voted_index = poll.options.index(payload["actions"][0]["value"])
-            user = User.find_or_create('@' + payload['user'])
+            voted_index = poll.options.index(event["value"])
+            user = User.find_or_create('@' + payload['user']["name"])
             vote = poll.PartialVoteType.objects.find_or_create(poll=poll, option=voted_index, user=user)
             if vote.weight is None:
-                vote.weight = 0
-            vote.weight = 1 - vote.weight
+                vote.weight = False
+            vote.weight = not vote.weight
             vote.save()
+        elif event['name'] == "numeric_option":
+            poll = PollBase.timestamped(payload['original_message']['ts'])
+            option = event['value']
+            ind = poll.options.index(option)
+            state = f"{payload['original_message']['ts']}\n{ind}"
+            elements = [{
+                "type": "text",
+                "subtype": "number",
+                "label": option,
+                "optional": True,
+                "name": "weight"
+            }]
+            slack.create_dialog(payload['trigger_id'], poll.question, state, 'numeric_vote',
+                                elements)
     return HttpResponse()
 
 
@@ -190,9 +215,6 @@ def vote_on_poll(request: HttpRequest, poll_timestamp: str) -> HttpResponse:
             if submitted_form.is_valid() \
                     and submitted_form.cleaned_data['poll'].timestamp_str == poll_timestamp:
                 poll = submitted_form.cleaned_data['poll']
-                poll.FullVoteType.validate_and_find_existing(submitted_form.cleaned_data['poll'],
-                                                             submitted_form.cleaned_data['user'],
-                                                             submitted_form.cleaned_data['user_secret'])
                 submitted_form.save()
                 return redirect(poll.get_absolute_url() + "/results")
             else:

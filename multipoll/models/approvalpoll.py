@@ -1,6 +1,5 @@
-from typing import List, Type
+from typing import List, Type, Dict
 
-from django import forms
 from django.db import models
 
 from multipoll.models.pollbase import PollBase, FullVoteBase, PartialVoteBase, Vote, VForm
@@ -8,7 +7,7 @@ from multipoll.models.pollbase import PollBase, FullVoteBase, PartialVoteBase, V
 
 class ApprovalPoll(PollBase):
     class PollMeta:
-        weight_field = models.BooleanField(null=False)
+        weight_field = models.BooleanField(null=True)
 
     supported_systems = ("approval",)
     default_system = "approval"\
@@ -31,6 +30,11 @@ class ApprovalPoll(PollBase):
         # noinspection PyTypeChecker
         return [f"({self.calculate_weight(i, votes)}) {ovs[0]} ({', '.join([u.name for u, _ in ovs[1]])})"
                 for i, ovs in enumerate(options_with_votes)]
+
+    @classmethod
+    def create_attachment_for_option(cls: Type['ApprovalPoll'],  option: str) -> Dict[str, str]:
+        attach = {"name": "bool_option", "text": option, "type": "button", "value": option}
+        return attach
 
 
 class FullApprovalVote(FullVoteBase):

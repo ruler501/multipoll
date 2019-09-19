@@ -10,4 +10,4 @@ class Borda(ElectoralSystem):
 
     @classmethod
     def calculate_weight(cls, ind: int, votes: List[List[Vote]]) -> Numeric:
-        return sum((w for v, w in votes[ind]))
+        return sum((w for _, w in votes[ind] if w is not None))
