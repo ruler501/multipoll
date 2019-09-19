@@ -50,16 +50,15 @@ def interactive_button(request: HttpRequest) -> HttpResponse:
     error_code = check_token(request)
     if error_code is not None:
         return error_code
-    
+    divider="_" 
     payload = json.loads(request.POST['payload'])
-    logger.info(f'Payload: {payload}')
     if payload["callback_id"] == "newOption":
         poll = PollBase.timestamped(payload['state'])
         poll.options.append(payload['submission']['new_option'])
         poll.options = utils.unique_list(poll.options)
         poll.save()
     elif payload['callback_id'] == 'numeric_vote':
-        ts, ind_str = payload.split('\n')
+        ts, ind_str = payload['state'].split(divider)
         poll = PollBase.timestamped(ts)
         user = User.find_or_create("@" + payload['user']["name"])
         poll.PartialVoteType.add(poll=poll, user=user, ind=int(ind_str), weight=payload['submission']['weight'])
@@ -86,7 +85,7 @@ def interactive_button(request: HttpRequest) -> HttpResponse:
             poll = PollBase.timestamped(payload['original_message']['ts'])
             option = event['value']
             ind = poll.options.index(option)
-            state = f"{payload['original_message']['ts']}\n{ind}"
+            state = f"{payload['original_message']['ts']}{divider}{ind}"
             elements = [{
                 "type": "text",
                 "subtype": "number",

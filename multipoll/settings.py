@@ -23,6 +23,9 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get("MPOLLS_SECRET_KEY", "")
+import logging
+
+logging.info(SECRET_KEY)
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -38,12 +41,7 @@ INSTALLED_APPS = (
     'elasticapm.contrib.django'
 )
 
-MIDDLEWARE = (
-    'django.middleware.common.CommonMiddleware',
-)
-if os.environ.get("ELASTIC_APM", None):
-    # To send performance metrics, add our tracing middleware:
-    MIDDLEWARE = MIDDLEWARE + ('elasticapm.contrib.django.middleware.TracingMiddleware',)
+MIDDLEWARE = ()
 
 ROOT_URLCONF = 'multipoll.urls'
 
@@ -87,7 +85,12 @@ USE_I18N = True
 USE_L10N = True
 
 USE_TZ = True
-if os.environ.get("ELASTIC_APM", None):
+if os.environ.get("MPOLLS_ELASTIC_APM", None):
+    # To send performance metrics, add our tracing middleware:
+    MIDDLEWARE = MIDDLEWARE + (
+            'elasticapm.contrib.django.middleware.TracingMiddleware',
+            'elasticapm.contrib.django.middleware.Catch404Middleware'
+    )
     ELASTIC_APM = {
         # Set required service name. Allowed characters:
       # a-z, A-Z, 0-9, -, _, and space
@@ -98,29 +101,10 @@ if os.environ.get("ELASTIC_APM", None):
 
       'DEBUG': True
     }
-    LOGGING = {
-        'version': 1,
-        'disable_existing_loggers': False,
-        'handlers': {
-            'logstash': {
-                'level': 'DEBUG',
-                'class': 'logstash.TCPLogstashHandler',
-                'host': 'localhost',
-                'port': 5959, # Default value: 5959
-                'version': 0, # Version of logstash event schema. Default value: 0 (for backward compatibility of the library)
-                'message_type': 'simplepoll',  # 'type' field in logstash message. Default value: 'logstash'.
-                'fqdn': False, # Fully qualified domain name. Default value: false.
-                'tags': ['django'], # list of tags. Default: None.
-            },
-        },
-        'loggers': {
-            'django': {
-                'handlers': ['logstash'],
-                'level': 'DEBUG',
-                'propagate': True,
-            },
-        }
-    }
+
+MIDDLEWARE = MIDDLEWARE + (
+    'django.middleware.common.CommonMiddleware',
+)
 
 # Honor the 'X-Forwarded-Proto' header for request.is_secure()
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')

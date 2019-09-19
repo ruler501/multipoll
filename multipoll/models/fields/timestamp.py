@@ -1,5 +1,4 @@
 import datetime
-import logging
 
 from typing import Union, Any, Optional
 
@@ -16,8 +15,6 @@ class TimestampField(models.CharField):
 
     @staticmethod
     def to_python_static(value: Union[str, datetime.datetime, float]) -> str:
-        logging.info(f'to_python: {value}, {type(value)}')
-
         if isinstance(value, str):
             try:
                 float(value)
@@ -37,7 +34,6 @@ class TimestampField(models.CharField):
 
     @staticmethod
     def from_db_value_static(value) -> datetime.datetime:
-        logging.info(f'db_value: {value}, {type(value)}')
         if isinstance(value, str):
             try:
                 fvalue = float(value)
@@ -59,8 +55,6 @@ class TimestampField(models.CharField):
 
     @staticmethod
     def get_prep_value_static(value: Union[str, datetime.datetime, float]) -> str:
-        logging.info(f'get_prep_value: {value} {type(value)}')
-
         if isinstance(value, datetime.datetime):
             dt = value
         else:

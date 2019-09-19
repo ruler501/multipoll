@@ -145,8 +145,7 @@ class PollBase(TypedModel):
         newline = '\n'
         text = f"*{self.question}*\n{self.get_absolute_url()}\n{newline.join(self.formatted_votes)}"
         attachments = self.format_attachments(self.options)
-        timestamp = TimestampField.to_python_static(self.timestamp)
-        slack.update_message(self.channel, timestamp, text, attachments)
+        slack.update_message(self.channel, self.timestamp_str, text, attachments)
 
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
