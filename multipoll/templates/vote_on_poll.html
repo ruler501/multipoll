@@ -1,7 +1,8 @@
 <h1>{{ form.instance.poll.question }}</h1>
 <form action="/polls/{{ form.instance.poll.timestamp_str }}/vote" method="post">
-    {{ form.as_p }}
-    <input type="hidden" name="_method" value="vote">
+    <ul>
+    {{ form.as_ul }}
+    </ul>
     <input type="submit" value="Submit Vote">
 </form>
 

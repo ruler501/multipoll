@@ -21,6 +21,7 @@ from multipoll.utils import Numeric, absolute_url_without_request
 
 Vote = Tuple[User, Numeric]
 VForm = TypeVar('VForm', bound=forms.ModelForm)
+ModelField = TypeVar('ModelField', bound=models.Field)
 
 
 class PollBase(TypedModel):
@@ -37,10 +38,12 @@ class PollBase(TypedModel):
     options: List[str] = ArrayField(models.CharField(max_length=100, null=False), null=False, size=MAX_OPTIONS)
 
     class Meta:
-        abstract = True
         get_latest_by = "timestamp"
         ordering = ("timestamp",)
         indexes = (models.Index(fields=('timestamp',)),)
+
+    class PollMeta:
+        weight_field: ModelField
 
     supported_systems = ("approval",)
     default_system = "approval"
@@ -63,16 +66,16 @@ class PollBase(TypedModel):
     @property
     def formatted_votes(self) -> List[str]:
         options_with_votes = self.order_options(self.options, self.all_votes)
-        options = list(zip(*options_with_votes))[0]
+        votes = list(zip(*options_with_votes))[1]
         # noinspection PyTypeChecker
-        return [f"({self.calculate_weight(i, options)}) {ovs[0]} ({', '.join([f'{u}[{w}]' for u, w in ovs[1]])})"
+        return [f"({self.calculate_weight(i, votes)}) {ovs[0]} ({', '.join([f'{u}[{w}]' for u, w in ovs[1]])})"
                 for i, ovs in enumerate(options_with_votes)]
 
     @property
     def partial_votes(self) -> List[List[Vote]]:
         votes: List[List[Vote]] = [[] for _ in self.options]
-        vote: PartialVoteBase
-        for vote in self.partialvote_set.all():
+        vote: PartialVote
+        for vote in getattr(self, getattr(self, "PartialVoteType").name.lower() + "_set").all():
             if vote.weight != 0:
                 votes[vote.option].append((vote.user, vote.weight))
         votes = [sorted(option, key=lambda v: v[0].name) for option in votes]
@@ -81,8 +84,8 @@ class PollBase(TypedModel):
     @property
     def full_votes(self) -> List[List[Vote]]:
         votes: List[List[Vote]] = [[] for _ in self.options]
-        vote: FullVoteBase
-        for vote in self.fullvote_set.all():
+        vote: FullVote
+        for vote in getattr(self, getattr(self, "FullVoteType").name.lower() + "_set").all():
             for option, weight in vote.options:
                 ind = self.options.index(option)
                 votes[ind].append((vote.user, weight))
@@ -123,9 +126,7 @@ class PollBase(TypedModel):
 
     @classmethod
     def add(cls: Type['Poll'], channel: str, question: str, options: List[str]) -> 'Poll':
-        poll = cls(channel=channel, question=question, options=options)
-        poll.save()
-        return poll
+        return cls.objects.create(channel=channel, question=question, options=options)
 
     @classmethod
     def timestamped(cls: Type['Poll'], timestamp: str) -> 'Poll':
@@ -164,13 +165,14 @@ def default_options_inner():
 
 class FullVoteMetaClass(ModelBase):
     def __new__(mcs, name, bases, attrs):
+        attrs['name'] = name
         parents = [b for b in bases if isinstance(b, FullVoteMetaClass)]
         if parents:
             _meta = attrs['Meta']
             poll_model = attrs["poll_model"]
             if 'poll' not in attrs:
                 attrs['poll'] = models.ForeignKey(poll_model, on_delete=models.CASCADE, null=False,
-                                                  related_name="fullvote_set")
+                                                  related_name=f"{name.lower()}_set")
             if 'weights' not in attrs:
                 attrs['weights'] = ArrayField(getattr(getattr(poll_model, "PollMeta"), "weight_field"),
                                               size=PollBase.MAX_OPTIONS, default=default_options_inner)
@@ -185,6 +187,7 @@ class FullVoteMetaClass(ModelBase):
         if parents:
             poll_model = getattr(newtype, "poll_model")
             setattr(poll_model, "FullVoteType", newtype)
+        return newtype
 
 
 class FullVoteBase(metaclass=FullVoteMetaClass):
@@ -239,13 +242,14 @@ FullVote = TypeVar('FullVote', bound=FullVoteBase)
 
 class PartialVoteMetaClass(ModelBase):
     def __new__(mcs, name, bases, attrs):
+        attrs['name'] = name
         parents = [b for b in bases if isinstance(b, PartialVoteMetaClass)]
         if parents:
             _meta = attrs['Meta']
             poll_model = attrs["poll_model"]
             if 'poll' not in attrs:
                 attrs['poll'] = models.ForeignKey(poll_model, on_delete=models.CASCADE, null=False,
-                                                  related_name="partialvote_set")
+                                                  related_name=f"{name.lower()}_set")
             if 'weight' not in attrs:
                 attrs['weight'] = getattr(getattr(poll_model, "PollMeta"), "weight_field")
             setattr(_meta, "constraints", (models.UniqueConstraint(fields=('poll', 'option', 'user',),
@@ -261,6 +265,7 @@ class PartialVoteMetaClass(ModelBase):
         if parents:
             poll_model = getattr(newtype, "poll_model")
             setattr(poll_model, "PartialVoteType", newtype)
+        return newtype
 
 
 class PartialVoteBase(metaclass=PartialVoteMetaClass):

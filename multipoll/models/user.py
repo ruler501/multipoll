@@ -5,7 +5,7 @@ from django.http import Http404
 
 
 class User(models.Model):
-    name = models.CharField(max_length=30, null=False, unique=True)
+    name = models.CharField(max_length=30, null=False, primary_key=True)
 
     class Meta:
         get_latest_by = "name"

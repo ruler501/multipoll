@@ -11,6 +11,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 from multipoll import utils, slack
 from multipoll.forms import NameAndSecretForm, FullApprovalVoteForm
+from multipoll.forms.fullmultivote import FullMultiVoteForm
 from multipoll.models import User, Poll, PollBase, ApprovalPoll, MultiPoll
 
 logger = logging.getLogger(__name__)
@@ -65,8 +66,10 @@ def interactive_button(request: HttpRequest) -> HttpResponse:
             poll = PollBase.timestamped(payload['original_message']['ts'])
             voted_index = poll.options.index(payload["actions"][0]["value"])
             user = User.find_or_create('@' + payload['user'])
-            vote = poll.FullVoteType.objects.find_or_create(poll=poll, option=voted_index, user=user)
-            vote.weight = not vote.weight
+            vote = poll.PartialVoteType.objects.find_or_create(poll=poll, option=voted_index, user=user)
+            if vote.weight is None:
+                vote.weight = 0
+            vote.weight = 1 - vote.weight
             vote.save()
     return HttpResponse()
 
@@ -128,7 +131,7 @@ def create_poll(request: HttpRequest) -> HttpResponse:
             return HttpResponseBadRequest()
         question = poll_data['question']
         options = poll_data['options']
-        channel = poll_data.get('channel', os.environ.get('POLLS_DEFAULT_CHANNEL', ''))
+        channel = poll_data.get('channel', os.environ.get('MPOLLS_DEFAULT_CHANNEL', ''))
         poll_type = poll_data.get('poll_type', 'approval')
         if poll_type == "approval":
             cls = ApprovalPoll
@@ -157,7 +160,7 @@ def vote_on_poll(request: HttpRequest, poll_timestamp: str) -> HttpResponse:
     if request.method == "GET":
         submitted_form = NameAndSecretForm(request.GET)
         if submitted_form.is_valid():
-            poll = ApprovalPoll.timestamped(poll_timestamp)
+            poll = PollBase.timestamped(poll_timestamp)
             vote = poll.FullVoteType.find_or_create_verified(poll,
                                                              submitted_form.cleaned_data['user_name'],
                                                              submitted_form.cleaned_data['user_secret'])
@@ -176,16 +179,22 @@ def vote_on_poll(request: HttpRequest, poll_timestamp: str) -> HttpResponse:
                 poll.options.append(option)
                 poll.save()
                 return redirect(request.POST['next'])
-        elif request.POST['_method'] == 'approvalvote':
-            submitted_form = FullApprovalVoteForm(request.POST)
+        elif request.POST['_method'].endswith('vote'):
+            if request.POST['_method'] == 'approvalvote':
+                cls = FullApprovalVoteForm
+            elif request.POST['_method'] == 'multivote':
+                cls = FullMultiVoteForm
+            else:
+                return HttpResponseBadRequest()
+            submitted_form = cls(request.POST)
             if submitted_form.is_valid() \
                     and submitted_form.cleaned_data['poll'].timestamp_str == poll_timestamp:
                 poll = submitted_form.cleaned_data['poll']
-                FullApprovalVoteForm.validate_and_find_existing(submitted_form.cleaned_data['poll'],
-                                                                submitted_form.cleaned_data['user'],
-                                                                submitted_form.cleaned_data['user_secret'])
+                poll.FullVoteType.validate_and_find_existing(submitted_form.cleaned_data['poll'],
+                                                             submitted_form.cleaned_data['user'],
+                                                             submitted_form.cleaned_data['user_secret'])
                 submitted_form.save()
-                return redirect(poll.get_absolute_url())
+                return redirect(poll.get_absolute_url() + "/results")
             else:
                 logging.warning(f"Failed to clean submitted form: {submitted_form.cleaned_data} had errors "
                                 + f"{submitted_form.errors} and "

@@ -9,8 +9,8 @@ from django.core.exceptions import PermissionDenied
 
 logger = logging.getLogger(__name__)
 
-_client_secret = os.environ.get('POLLS_SLACK_SECRET', '')
-_bot_secret = os.environ.get('POLLS_SLACK_BOT_SECRET', '')
+_client_secret = os.environ.get('MPOLLS_SLACK_SECRET', '')
+_bot_secret = os.environ.get('MPOLLS_SLACK_BOT_SECRET', '')
 
 
 def _get_token(use_client_secret: bool = True):

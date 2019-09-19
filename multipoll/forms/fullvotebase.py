@@ -1,0 +1,96 @@
+from typing import Type, TypeVar, Dict, List
+
+from django import forms
+from django.core.exceptions import SuspiciousOperation
+
+from multipoll.models import Poll, FullVote, User
+from multipoll.utils import Numeric, ClassProperty
+
+
+FormField = TypeVar('FormField', bound=forms.Field)
+
+
+class FullVoteFormBase(forms.ModelForm):
+    fields: Dict[str, FormField]
+    errors: bool
+    instance: FullVote
+
+    # noinspection PyMethodParameters
+    @ClassProperty
+    def vote_model(cls: Type['FullVoteForm']) -> Type['Poll']:
+        return getattr(getattr(cls, "Meta"), "model")
+
+    # noinspection PyMethodParameters
+    @ClassProperty
+    def poll_model(cls: Type['FullVoteForm']) -> Type['Poll']:
+        return getattr(getattr(cls, "vote_model"), "poll_model")
+
+    class Meta:
+        vote_model: Type['FullVote']
+        abstract = True
+        fields = ('poll', 'user', 'user_secret')
+        widgets = {
+            'poll': forms.HiddenInput(),
+            'user': forms.HiddenInput(),
+            'user_secret': forms.HiddenInput()
+        }
+
+    def __init__(self, *args, **kwargs):
+        if len(args) > 0:
+            kwargs['data'] = args[0]
+            args = tuple(args[1:])
+        super().__init__(*args, **kwargs)
+        if 'data' in kwargs and 'poll' in kwargs['data']:
+            poll = self.poll_model.timestamped(kwargs['data']['poll'])
+            setattr(self.instance, 'poll', poll)
+            user_name = kwargs['data']['user']
+            user = User.find_or_create(user_name)
+            existing = self.vote_model.validate_and_find_existing(poll, user, kwargs["data"]["user_secret"])
+            if existing:
+                self.instance = existing
+        if not self.instance.poll:
+            raise SuspiciousOperation("Must define poll")
+        # noinspection PyUnresolvedReferences
+        options = self.instance.poll.options
+        vote_lists = self.instance.poll.all_votes
+        for i, ovs in enumerate(zip(options, vote_lists)):
+            option, votes = ovs
+            our_vote = [v for v in votes if v[0] == self.instance.user]
+            if our_vote:
+                self.fields[f"option-{i}"] = getattr(getattr(self.poll_model, "PollMeta"),
+                                                     "weight_field").formfield(required=False,
+                                                                               label=option, initial=our_vote[0][1])
+            else:
+                self.fields[f"option-{i}"] = getattr(getattr(self.poll_model, "PollMeta"),
+                                                     "weight_field").formfield(required=False,
+                                                                               label=option)
+
+    def save(self, commit=True):
+        if self.errors:
+            # noinspection PyProtectedMember
+            # noinspection PyUnresolvedReferences
+            raise ValueError(
+                "The %s could not be %s because the data didn't validate." % (
+                    self.instance._meta.object_name,
+                    'created' if self.instance._state.adding else 'changed',
+                )
+            )
+        existing = self.vote_model.validate_and_find_existing(self.instance.poll, self.instance.user,
+                                                              self.instance.user_secret)
+        if existing:
+            self.instance = existing
+        weights: List[Numeric] = [0 for _ in range(self.poll_model.MAX_OPTIONS)]
+        for field_name, field in self.fields.items():
+            if field_name.startswith("option"):
+                ind = int(field_name[len("option-"):])
+                weights[ind] = field.clean()
+        self.instance.weights = weights
+        # noinspection PyUnresolvedReferences
+        return super().save(commit)
+
+    # noinspection PyMethodMayBeStatic
+    def validate_unique(self):
+        return True
+
+
+FullVoteForm = TypeVar("FullVoteForm", bound=FullVoteFormBase)

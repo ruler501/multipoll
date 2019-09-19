@@ -10,7 +10,7 @@ Numeric = TypeVar('Numeric', bool, int, float)
 logger = logging.getLogger(__name__)
 
 
-def set_log_level(key: str = 'POLLS_LOGLEVEL', default: str = "WARN") -> None:
+def set_log_level(key: str = 'MPOLLS_LOGLEVEL', default: str = "WARN") -> None:
     log_level_name = os.environ.get(key, default).upper()
     try:
         log_level = getattr(logging, log_level_name)
@@ -65,3 +65,11 @@ def unique_iter(seq: Iterable[T], id_function: Callable[[T], U] = lambda x: x) -
 # TODO: Figure out how to make the type signature work with the default argument
 def unique_list(seq: Iterable[T], id_function: Callable[[T], U] = lambda x: x) -> List[T]:  # Order preserving
     return list(unique_iter(seq, id_function))
+
+
+class ClassProperty(object):
+    def __init__(self, fget):
+        self.fget = fget
+
+    def __get__(self, owner_self, owner_cls):
+        return self.fget(owner_cls)

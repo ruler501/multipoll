@@ -7,9 +7,6 @@ from multipoll.models.pollbase import PollBase, FullVoteBase, PartialVoteBase, V
 
 
 class ApprovalPoll(PollBase):
-    class Meta(PollBase.Meta):
-        proxy = True
-
     class PollMeta:
         weight_field = models.BooleanField(null=False)
 
@@ -20,7 +17,7 @@ class ApprovalPoll(PollBase):
     def full_votes(self) -> List[List[Vote]]:
         votes: List[List[Vote]] = [[] for _ in self.options]
         vote: FullApprovalVote
-        for vote in self.fullvote_set.all():
+        for vote in getattr(self, getattr(self, "FullVoteType").name.lower() + "_set").all():
             for option in vote.options:
                 ind = self.options.index(option)
                 votes[ind].append((vote.user, True))

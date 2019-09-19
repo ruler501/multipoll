@@ -4,9 +4,6 @@ from multipoll.models.pollbase import PollBase, FullVoteBase, PartialVoteBase, V
 
 
 class MultiPoll(PollBase):
-    class Meta(PollBase.Meta):
-        proxy = True
-
     class PollMeta:
         weight_field = models.SmallIntegerField(null=False)
 
@@ -21,7 +18,8 @@ class FullMultiVote(FullVoteBase):
     poll_model = MultiPoll
 
     def get_form(self) -> VForm:
-        return None
+        from multipoll.forms import FullMultiVoteForm
+        return FullMultiVoteForm(instance=self)
 
 
 class PartialMultiVote(PartialVoteBase):
