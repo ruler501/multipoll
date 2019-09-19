@@ -31,9 +31,8 @@ class ApprovalPoll(PollBase):
         return [f"({self.calculate_weight(i, votes)}) {ovs[0]} ({', '.join([u.name for u, _ in ovs[1]])})"
                 for i, ovs in enumerate(options_with_votes)]
 
-    @classmethod
-    def create_attachment_for_option(cls: Type['ApprovalPoll'],  option: str) -> Dict[str, str]:
-        attach = {"name": "bool_option", "text": option, "type": "button", "value": option}
+    def create_attachment_for_option(self, ind: int) -> Dict[str, str]:
+        attach = {"name": "bool_option", "text": self.options[ind], "type": "button", "value": str(ind)}
         return attach
 
 

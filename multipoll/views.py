@@ -74,7 +74,7 @@ def interactive_button(request: HttpRequest) -> HttpResponse:
                                 elements)
         elif event["name"] == "bool_option":
             poll = PollBase.timestamped(payload['original_message']['ts'])
-            voted_index = poll.options.index(event["value"])
+            voted_index = int(event['value'])
             user = User.find_or_create('@' + payload['user']["name"])
             vote = poll.PartialVoteType.objects.find_or_create(poll=poll, option=voted_index, user=user)
             if vote.weight is None:
@@ -83,9 +83,9 @@ def interactive_button(request: HttpRequest) -> HttpResponse:
             vote.save()
         elif event['name'] == "numeric_option":
             poll = PollBase.timestamped(payload['original_message']['ts'])
-            option = event['value']
-            ind = poll.options.index(option)
-            state = f"{payload['original_message']['ts']}{divider}{ind}"
+            ind = int(event['value'])
+            option = poll.options[ind]
+            state = f"{payload['original_message']['ts']}\n{ind}"
             elements = [{
                 "type": "text",
                 "subtype": "number",

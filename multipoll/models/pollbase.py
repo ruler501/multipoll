@@ -108,15 +108,11 @@ class PollBase(TypedModel):
         else:
             return None
 
-    @classmethod
-    def create_attachment_for_option(cls: Type['Poll'], option: str) -> Dict[str, str]: ...
+    def create_attachment_for_option(self, ind: int) -> Dict[str, str]: ...
 
-    @classmethod
-    def format_attachments(cls: Type['Poll'], options: List[str], include_add_more: bool = True) -> str:
-        actions = []
-        for option in options:
-            attach = cls.create_attachment_for_option(option)
-            actions.append(attach)
+    def format_attachments(self, include_add_more: bool = True) -> str:
+        actions = [self.create_attachment_for_option(i) for i in range(len(self.options))]
+
         if include_add_more:
             actions.append({"name": "addMore", "text": "Add More", "type": "button", "value": "Add More"})
         attachments = []
@@ -138,7 +134,7 @@ class PollBase(TypedModel):
     def post_poll(self) -> str:
         newline = '\n'
         text = f"*{self.question}*\n\n{newline.join(self.formatted_votes)}"
-        attachments = self.format_attachments(self.options)
+        attachments = self.format_attachments()
         return slack.post_message(self.channel, text, attachments)
 
     def update_poll(self) -> None:

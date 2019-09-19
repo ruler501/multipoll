@@ -12,9 +12,8 @@ class MultiPoll(PollBase):
     supported_systems = ("approval", "borda")
     default_system = "borda"
 
-    @classmethod
-    def create_attachment_for_option(cls: Type['MultiPoll'], option: str) -> Dict[str, str]:
-        attach = {"name": "numeric_option", "text": option, "type": "button", "value": option}
+    def create_attachment_for_option(self, ind: int) -> Dict[str, str]:
+        attach = {"name": "numeric_option", "text": self.options[ind], "type": "button", "value": str(ind)}
         return attach
 
 
