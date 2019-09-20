@@ -1,3 +1,4 @@
+import datetime
 import logging
 import os
 
@@ -43,9 +44,9 @@ def create_dialog(trigger_id: str, title: str, state: str, callback_id: str, ele
             "elements": elements
         }
     }
-    logger.info("Params: %s", method_params)
+    logger.info(f"Dialog Params at {datetime.datetime.utcnow().timestamp():.6f}: {method_params}")
     response_data = requests.post(method_url, json=method_params, headers=_create_headers(use_client_secret))
-    logger.info("Dialog Response Body: %s", response_data.content)
+    logger.info(f"Dialog Response Status({response_data.status_code}) at {datetime.datetime.utcnow().timestamp():.6f} Body: {response_data.content}")
     response_data.raise_for_status()
 
 
@@ -57,6 +58,7 @@ def post_message(channel: str, message: str, attachments: Optional[str] = None, 
         "icon_url": "https://simplepoll.rocks/static/main/simplepolllogo-colors.png",
         "attachments": attachments
     }
+    logger.debug(f'Post Params: {body_dict}')
     text_response = requests.post(post_message_url, headers=_create_headers(use_client_secret), json=body_dict)
     logger.info('Post Response Body: %s', text_response.content)
     text_response.raise_for_status()
@@ -74,6 +76,7 @@ def update_message(channel: str, timestamp: str, text: str, attachments: Optiona
         "attachments": attachments,
         "parse": "full"
     }
+    logger.info(f"Update Params: {body_dict}")
     text_response = requests.post(method_url, headers=_create_headers(use_client_secret), json=body_dict)
     logger.info("Update Response Body: %s", text_response.content)
     text_response.raise_for_status()

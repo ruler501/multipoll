@@ -17,7 +17,7 @@ class ApprovalPoll(PollBase):
         votes: List[List[Vote]] = [[] for _ in self.options]
         vote: FullApprovalVote
         for vote in getattr(self, getattr(self, "FullVoteType").name.lower() + "_set").all():
-            for option in vote.options:
+            for option in vote.options: 
                 ind = self.options.index(option)
                 votes[ind].append((vote.user, True))
         votes = [sorted(option, key=lambda v: v[0].name) for option in votes]

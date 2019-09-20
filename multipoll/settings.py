@@ -25,7 +25,8 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = os.environ.get("MPOLLS_SECRET_KEY", "")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# DEBUG = True
+DEBUG = False
 DEBUG_PROPAGATE_EXCEPTIONS = DEBUG
 
 ALLOWED_HOSTS = os.environ.get("MPOLLS_HOST", "localhost;127.0.0.1").split(';')
@@ -38,12 +39,7 @@ INSTALLED_APPS = (
     'elasticapm.contrib.django'
 )
 
-MIDDLEWARE = (
-    'django.middleware.common.CommonMiddleware',
-)
-if os.environ.get("ELASTIC_APM", None):
-    # To send performance metrics, add our tracing middleware:
-    MIDDLEWARE = MIDDLEWARE + ('elasticapm.contrib.django.middleware.TracingMiddleware',)
+MIDDLEWARE = ()
 
 ROOT_URLCONF = 'multipoll.urls'
 
@@ -87,40 +83,25 @@ USE_I18N = True
 USE_L10N = True
 
 USE_TZ = True
-if os.environ.get("ELASTIC_APM", None):
+if os.environ.get("MPOLLS_ELASTIC_APM", None):
+    # To send performance metrics, add our tracing middleware:
+    MIDDLEWARE = MIDDLEWARE + (
+            'elasticapm.contrib.django.middleware.TracingMiddleware',
+            'elasticapm.contrib.django.middleware.Catch404Middleware'
+    )
     ELASTIC_APM = {
         # Set required service name. Allowed characters:
-      # a-z, A-Z, 0-9, -, _, and space
-      'SERVICE_NAME': 'multipoll',
-
-      # Set custom APM Server URL (default: http://localhost:8200)
-      'SERVER_URL': 'http://localhost:8200',
-
-      'DEBUG': True
+        # a-z, A-Z, 0-9, -, _, and space
+        'SERVICE_NAME': 'multipoll',
+        # Set custom APM Server URL (default: http://localhost:8200)
+        'SERVER_URL': 'http://localhost:8200',
+        'DEBUG': True,
+        'DJANGO_TRANSACTION_NAME_FROM_ROUTE': True
     }
-    LOGGING = {
-        'version': 1,
-        'disable_existing_loggers': False,
-        'handlers': {
-            'logstash': {
-                'level': 'DEBUG',
-                'class': 'logstash.TCPLogstashHandler',
-                'host': 'localhost',
-                'port': 5959, # Default value: 5959
-                'version': 0, # Version of logstash event schema. Default value: 0 (for backward compatibility of the library)
-                'message_type': 'simplepoll',  # 'type' field in logstash message. Default value: 'logstash'.
-                'fqdn': False, # Fully qualified domain name. Default value: false.
-                'tags': ['django'], # list of tags. Default: None.
-            },
-        },
-        'loggers': {
-            'django': {
-                'handlers': ['logstash'],
-                'level': 'DEBUG',
-                'propagate': True,
-            },
-        }
-    }
+
+MIDDLEWARE = MIDDLEWARE + (
+    'django.middleware.common.CommonMiddleware',
+)
 
 # Honor the 'X-Forwarded-Proto' header for request.is_secure()
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
@@ -134,7 +115,8 @@ if POLLS_DATABASE != "local" and POLLS_DATABASE != "dj" and REMOTE_DATABASE is n
         'USER': os.environ.get("MPOLLS_DATABASE_USERNAME", None),
         'PASSWORD': os.environ.get("MPOLLS_DATABASE_PASSWORD", None),
         'HOST': REMOTE_DATABASE,
-        'PORT': os.environ.get("MPOLLS_DATABASE_PORT", None)
+        'PORT': os.environ.get("MPOLLS_DATABASE_PORT", None),
+        'CONN_MAX_AGE': None
     }
 else:
     # Parse database configuration from $DATABASE_URL

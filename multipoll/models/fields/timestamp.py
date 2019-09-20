@@ -1,5 +1,4 @@
 import datetime
-import logging
 
 from typing import Union, Any, Optional
 
@@ -18,17 +17,17 @@ class TimestampField(models.CharField):
     def to_python_static(value: Union[str, datetime.datetime, float]) -> str:
         if isinstance(value, str):
             try:
-                float(value)
-                return value
+                fl = float(value)
             except ValueError:
                 # TODO: Investigate type checker saying fromisoformat doesn't exist.
-                return str(datetime.datetime.fromisoformat(value).replace(tzinfo=datetime.timezone.utc).timestamp())
+                fl = datetime.datetime.fromisoformat(value).replace(tzinfo=datetime.timezone.utc).timestamp()
         elif isinstance(value, datetime.datetime):
-            return str(value.replace(tzinfo=datetime.timezone.utc).timestamp())
+            fl = value.replace(tzinfo=datetime.timezone.utc).timestamp()
         elif isinstance(value, float):
-            return str(value)
-
-        raise TypeError("value was not a recognized type")
+            fl = value
+        else:
+            raise TypeError("value was not a recognized type")
+        return f'{fl:.6f}'
 
     def to_python(self, value):
         return TimestampField.to_python_static(value)

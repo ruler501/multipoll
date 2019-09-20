@@ -1,5 +1,6 @@
 import datetime
 import json
+import logging
 import math
 
 from typing import List, Tuple, TypeVar, Type, Optional, Dict
@@ -23,10 +24,10 @@ Vote = Tuple[User, OptNumeric]
 VForm = TypeVar('VForm', bound=forms.ModelForm)
 ModelField = TypeVar('ModelField', bound=models.Field)
 
+logger = logging.getLogger(__name__)
+
 
 class PollBase(TypedModel):
-    fullvote_set: QuerySet
-    partialvote_set: QuerySet
     FullVoteType: Type['FullVote']
     PartialVoteType: Type['PartialVote']
 
@@ -49,9 +50,11 @@ class PollBase(TypedModel):
     default_system = "approval"
 
     @property
-    def timestamp_str(self):
-        result = TimestampField.to_python_static(self.timestamp)
-        return result
+    def timestamp_str(self) -> Optional[str]:
+        if self.timestamp:
+            return TimestampField.to_python_static(self.timestamp)
+        else:
+            return None
 
     @property
     def all_votes(self) -> List[List[Vote]]:
@@ -68,15 +71,18 @@ class PollBase(TypedModel):
         options_with_votes = self.order_options(self.options, self.all_votes)
         votes = list(zip(*options_with_votes))[1]
         # noinspection PyTypeChecker
-        return [f"({self.calculate_weight(i, votes)}) {ovs[0]} ({', '.join([f'{u}[{w}]' for u, w in ovs[1]])})"
+        return [f"({self.calculate_weight(i, votes)}) {ovs[0]} ({', '.join([f'{u}[{w}]' for u, w in ovs[1] if w is not None])})"
                 for i, ovs in enumerate(options_with_votes)]
 
     @property
     def partial_votes(self) -> List[List[Vote]]:
         votes: List[List[Vote]] = [[] for _ in self.options]
         vote: PartialVote
-        for vote in getattr(self, getattr(self, "PartialVoteType").name.lower() + "_set").all():
-            if vote.weight != 0:
+        partial_vote_set = getattr(self, "PartialVoteType").name.lower() + "_set"
+        for vote in getattr(self, partial_vote_set).all():
+            weight = getattr(vote, 'weight')
+            logging.info(f'{vote.option} -- {weight}')
+            if weight is not None and weight not in (False, "off", "False", "false", "f"):
                 votes[vote.option].append((vote.user, vote.weight))
         votes = [sorted(option, key=lambda v: v[0].name) for option in votes]
         return votes
@@ -131,24 +137,23 @@ class PollBase(TypedModel):
     def timestamped(cls: Type['Poll'], timestamp: str) -> 'Poll':
         return get_object_or_404(cls, timestamp=timestamp)
 
-    def post_poll(self) -> str:
+    def post_poll(self) -> None:
         newline = '\n'
         text = f"*{self.question}*\n\n{newline.join(self.formatted_votes)}"
         attachments = self.format_attachments()
-        return slack.post_message(self.channel, text, attachments)
+        ts = slack.post_message(self.channel, text, attachments)
+        self.timestamp = ts
 
     def update_poll(self) -> None:
         newline = '\n'
         text = f"*{self.question}*\n{self.get_absolute_url()}\n{newline.join(self.formatted_votes)}"
-        attachments = self.format_attachments()
-        timestamp = self.timestamp_str
-        slack.update_message(self.channel, timestamp, text, attachments)
+        attachments = self.format_attachments(self.options)
+        slack.update_message(self.channel, self.timestamp_str, text, attachments)
 
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
         if not self.timestamp:
-            ts = self.post_poll()
-            self.timestamp = TimestampField.from_db_value_static(ts)
+            self.post_poll()
 
         super().save(force_insert, force_update, using, update_fields)
 
@@ -169,11 +174,9 @@ class FullVoteMetaClass(ModelBase):
         if parents:
             _meta = attrs['Meta']
             poll_model = attrs["poll_model"]
-            if 'poll' not in attrs:
-                attrs['poll'] = models.ForeignKey(poll_model, on_delete=models.CASCADE, null=False,
+            attrs['poll'] = models.ForeignKey(poll_model, on_delete=models.CASCADE, null=False,
                                                   related_name=f"{name.lower()}_set")
-            if 'weights' not in attrs:
-                attrs['weights'] = ArrayField(getattr(getattr(poll_model, "PollMeta"), "weight_field"),
+            attrs['weights'] = ArrayField(getattr(getattr(poll_model, "PollMeta"), "weight_field").clone(),
                                               size=PollBase.MAX_OPTIONS, default=default_options_inner)
             setattr(_meta, "constraints", (models.UniqueConstraint(fields=('poll', 'user'),
                                                                    name=f'Single{name}Copy'),))
@@ -247,16 +250,13 @@ class PartialVoteMetaClass(ModelBase):
         if parents:
             _meta = attrs['Meta']
             poll_model = attrs["poll_model"]
-            if 'poll' not in attrs:
-                attrs['poll'] = models.ForeignKey(poll_model, on_delete=models.CASCADE, null=False,
+            attrs['poll'] = models.ForeignKey(poll_model, on_delete=models.CASCADE, null=False,
                                                   related_name=f"{name.lower()}_set")
-            if 'weight' not in attrs:
-                attrs['weight'] = getattr(getattr(poll_model, "PollMeta"), "weight_field")
+            attrs['weight'] = getattr(getattr(poll_model, "PollMeta"), "weight_field").clone()
             setattr(_meta, "constraints", (models.UniqueConstraint(fields=('poll', 'option', 'user',),
                                                                    name=f'Single{name}Copy'),))
             setattr(_meta, "indexes", (models.Index(fields=('poll',)),))
             setattr(_meta, "ordering", ('poll', 'option', 'user'))
-            assert 'weight' in attrs
             assert 'get_form' in attrs
 
         bases = bases + (models.Model,)
@@ -291,10 +291,12 @@ class PartialVoteBase(metaclass=PartialVoteMetaClass):
     def get_form(self) -> VForm: ...
 
     @classmethod
-    def add(cls: Type['PartialVote'], poll: Poll, user: User, option: int, weight: Numeric) -> 'PartialVote':
-        partial_vote = cls.objects.get_or_create(poll=poll, user=user, option=option)[0]
-        partial_vote.weight = weight
-        partial_vote.save()
+    def find_or_create(cls: Type['PartialVote'], poll: Poll, user: User, option: int) -> 'PartialVote':
+        partial_votes = cls.objects.filter(poll=poll, user=user, option=option)
+        if partial_votes:
+            partial_vote = partial_votes[0]
+        else:
+            partial_vote = cls(poll=poll, user=user, option=option)
         return partial_vote
 
 
