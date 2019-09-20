@@ -10,21 +10,6 @@ OptNumeric = Optional[Numeric]
 
 logger = logging.getLogger(__name__)
 
-
-def set_log_level(key: str = 'MPOLLS_LOGLEVEL', default: str = "WARN") -> None:
-    log_level_name = os.environ.get(key, default).upper()
-    try:
-        log_level = getattr(logging, log_level_name)
-        logging.basicConfig(level=log_level)
-        logger.setLevel(log_level)
-    except KeyError:
-        logging.basicConfig(level=logging.NOTSET)
-        logger.setLevel(logging.NOTSET)
-        logger.error("Could not find the appropriate log level", exc_info=True)
-
-
-set_log_level()
-
 client_id = "4676884434.375651972439"
 client_secret = os.environ.get("MPOLLS_CLIENT_SECRET", "")
 bot_secret = os.environ.get("MPOLLS_BOT_SECRET", "")

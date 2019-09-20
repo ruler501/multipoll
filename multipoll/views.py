@@ -217,9 +217,9 @@ def vote_on_poll(request: HttpRequest, poll_timestamp: str) -> HttpResponse:
                 submitted_form.save()
                 return redirect(poll.get_absolute_url() + "/results")
             else:
-                logging.warning(f"Failed to clean submitted form: {submitted_form.cleaned_data} had errors "
-                                + f"{submitted_form.errors} and "
-                                + f"timestamp {submitted_form.cleaned_data['poll'].timestamp_str}")
+                logger.warning(f"Failed to clean submitted form: {submitted_form.cleaned_data} had errors "
+                               + f"{submitted_form.errors} and "
+                               + f"timestamp {submitted_form.cleaned_data['poll'].timestamp_str}")
                 return HttpResponseBadRequest()
         else:
             return HttpResponseBadRequest()
