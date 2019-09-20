@@ -1,3 +1,4 @@
+import datetime
 import logging
 import os
 
@@ -43,9 +44,9 @@ def create_dialog(trigger_id: str, title: str, state: str, callback_id: str, ele
             "elements": elements
         }
     }
-    logger.info("Dialog Params: %s", method_params)
+    logger.info(f"Dialog Params at {datetime.datetime.utcnow().timestamp():.6f}: {method_params}")
     response_data = requests.post(method_url, json=method_params, headers=_create_headers(use_client_secret))
-    logger.info("Dialog Response Body: %s", response_data.content)
+    logger.info(f"Dialog Response Status({response_data.status_code}) at {datetime.datetime.utcnow().timestamp():.6f} Body: {response_data.content}")
     response_data.raise_for_status()
 
 

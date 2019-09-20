@@ -1,3 +1,5 @@
+import datetime
+import inspect
 import json
 import logging
 import os
@@ -35,7 +37,7 @@ def check_token(request: HttpRequest) -> Optional[HttpResponse]:
 def normalize_post(request: HttpRequest) -> None:
     if getattr(request, "POST") is None:
         request.POST = json.loads(request.body)
-    logger.info(f'Request: {request.POST}')
+    logger.info(f'Request to {inspect.stack()[1].function} at {datetime.datetime.utcnow().timestamp():.6f}: {request.POST}')
 
 
 @csrf_exempt
@@ -61,7 +63,9 @@ def interactive_button(request: HttpRequest) -> HttpResponse:
         ts, ind_str = payload['state'].split(divider)
         poll = PollBase.timestamped(ts)
         user = User.find_or_create("@" + payload['user']["name"])
-        poll.PartialVoteType.add(poll=poll, user=user, ind=int(ind_str), weight=payload['submission']['weight'])
+        vote = poll.PartialVoteType.find_or_create(poll=poll, user=user, option=int(ind_str))
+        vote.weight = payload['submission']['weight']
+        vote.save()
     elif payload['callback_id'] == "options":
         event = payload["actions"][0]
         if event["name"] == "addMore":
@@ -76,7 +80,7 @@ def interactive_button(request: HttpRequest) -> HttpResponse:
             poll = PollBase.timestamped(payload['original_message']['ts'])
             voted_index = int(event['value'])
             user = User.find_or_create('@' + payload['user']["name"])
-            vote = poll.PartialVoteType.objects.find_or_create(poll=poll, option=voted_index, user=user)
+            vote = poll.PartialVoteType.find_or_create(poll=poll, option=voted_index, user=user)
             if vote.weight is None:
                 vote.weight = False
             vote.weight = not vote.weight
@@ -85,7 +89,7 @@ def interactive_button(request: HttpRequest) -> HttpResponse:
             poll = PollBase.timestamped(payload['original_message']['ts'])
             ind = int(event['value'])
             option = poll.options[ind]
-            state = f"{payload['original_message']['ts']}\n{ind}"
+            state = f"{payload['original_message']['ts']}{divider}{ind}"
             elements = [{
                 "type": "text",
                 "subtype": "number",
@@ -93,7 +97,11 @@ def interactive_button(request: HttpRequest) -> HttpResponse:
                 "optional": True,
                 "name": "weight"
             }]
-            slack.create_dialog(payload['trigger_id'], poll.question, state, 'numeric_vote',
+            user = User.find_or_create("@" + payload['user']['name'])
+            existing = poll.PartialVoteType.objects.filter(poll=poll, user=user, option=ind)
+            if existing:
+                elements[0]["value"] = existing[0].weight
+            slack.create_dialog(payload['trigger_id'], "Respond to Poll:", state, 'numeric_vote',
                                 elements)
     return HttpResponse()
 

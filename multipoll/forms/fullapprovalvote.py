@@ -13,7 +13,7 @@ class FullApprovalVoteForm(FullVoteFormBase):
         model = FullApprovalVote
 
     def sanitize_weight(self, weight: OptNumeric) -> OptNumeric:
-        if weight is None or weight in ("off", 0, False, "false", "False", "f"):
+        if weight is None or weight in ("off", 0, False, "false", "False", "f", ""):
             return False
         else:
             return True

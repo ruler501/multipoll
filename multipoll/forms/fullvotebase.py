@@ -90,7 +90,10 @@ class FullVoteFormBase(forms.ModelForm):
 
     # noinspection PyMethodMayBeStatic
     def sanitize_weight(self, weight: OptNumeric) -> OptNumeric:
-        return weight
+        if weight == "":
+            return None
+        else:
+            return weight
 
     # noinspection PyMethodMayBeStatic
     def validate_unique(self):

@@ -23,12 +23,10 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get("MPOLLS_SECRET_KEY", "")
-import logging
-
-logging.info(SECRET_KEY)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# DEBUG = True
+DEBUG = False
 DEBUG_PROPAGATE_EXCEPTIONS = DEBUG
 
 ALLOWED_HOSTS = os.environ.get("MPOLLS_HOST", "localhost;127.0.0.1").split(';')
@@ -93,13 +91,12 @@ if os.environ.get("MPOLLS_ELASTIC_APM", None):
     )
     ELASTIC_APM = {
         # Set required service name. Allowed characters:
-      # a-z, A-Z, 0-9, -, _, and space
-      'SERVICE_NAME': 'multipoll',
-
-      # Set custom APM Server URL (default: http://localhost:8200)
-      'SERVER_URL': 'http://localhost:8200',
-
-      'DEBUG': True
+        # a-z, A-Z, 0-9, -, _, and space
+        'SERVICE_NAME': 'multipoll',
+        # Set custom APM Server URL (default: http://localhost:8200)
+        'SERVER_URL': 'http://localhost:8200',
+        'DEBUG': True,
+        'DJANGO_TRANSACTION_NAME_FROM_ROUTE': True
     }
 
 MIDDLEWARE = MIDDLEWARE + (
@@ -118,7 +115,8 @@ if POLLS_DATABASE != "local" and POLLS_DATABASE != "dj" and REMOTE_DATABASE is n
         'USER': os.environ.get("MPOLLS_DATABASE_USERNAME", None),
         'PASSWORD': os.environ.get("MPOLLS_DATABASE_PASSWORD", None),
         'HOST': REMOTE_DATABASE,
-        'PORT': os.environ.get("MPOLLS_DATABASE_PORT", None)
+        'PORT': os.environ.get("MPOLLS_DATABASE_PORT", None),
+        'CONN_MAX_AGE': None
     }
 else:
     # Parse database configuration from $DATABASE_URL
