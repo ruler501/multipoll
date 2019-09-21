@@ -1,10 +1,10 @@
 import abc
 from typing import List, Tuple, Type
 
-from multipoll.models import FullVote
 from multipoll.utils import OptNumeric
 
 Vote = Tuple['multipoll.models.User', OptNumeric]
+FullVote = 'multipoll.models.FullVote'
 
 
 class ElectoralSystemMeta(abc.ABCMeta):
