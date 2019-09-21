@@ -1,13 +1,21 @@
 from typing import List
 
-from multipoll.electoralsystems.registry import ElectoralSystem, Vote
-from multipoll.utils import Numeric
+from multipoll.electoralsystems.ranking import Ranking
+from multipoll.electoralsystems.registry import electoral_system
+from multipoll.models import FullVote
 
 
-class Borda(ElectoralSystem):
+# noinspection PyPep8Naming
+class borda(electoral_system):
     key = "borda"
     label = "Borda Count"
 
     @classmethod
-    def calculate_weight(cls, ind: int, votes: List[List[Vote]]) -> Numeric:
-        return sum((w for _, w in votes[ind] if w is not None))
+    def generate_scores(cls, votes: List[FullVote]) -> List[float]:
+        rankings = [Ranking(vote) for vote in votes]
+        scores = [0 for _ in votes[0].weights]
+        for ranking in rankings:
+            for i, w in enumerate(ranking.weights):
+                if w is not None:
+                    scores[i] += w
+        return scores

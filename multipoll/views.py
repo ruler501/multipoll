@@ -37,7 +37,8 @@ def check_token(request: HttpRequest) -> Optional[HttpResponse]:
 def normalize_post(request: HttpRequest) -> None:
     if getattr(request, "POST") is None:
         request.POST = json.loads(request.body)
-    logger.info(f'Request to {inspect.stack()[1].function} at {datetime.datetime.utcnow().timestamp():.6f}: {request.POST}')
+    logger.info(f'Request to {inspect.stack()[1].function} at '
+                + f'{datetime.datetime.utcnow().timestamp():.6f}: {request.POST}')
 
 
 @csrf_exempt
@@ -52,7 +53,7 @@ def interactive_button(request: HttpRequest) -> HttpResponse:
     error_code = check_token(request)
     if error_code is not None:
         return error_code
-    divider="_" 
+    divider = "_"
     payload = json.loads(request.POST['payload'])
     if payload["callback_id"] == "newOption":
         poll = PollBase.timestamped(payload['state'])

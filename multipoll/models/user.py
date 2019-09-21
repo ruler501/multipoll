@@ -4,6 +4,7 @@ from typing import Union, Dict
 from django.db import models
 from django.http import Http404
 
+
 @total_ordering
 class User(models.Model):
     name = models.CharField(max_length=30, null=False, primary_key=True)
@@ -32,4 +33,7 @@ class User(models.Model):
         return self.name < getattr(other, "name", "")
 
     def __str__(self) -> str:
-        return self.name 
+        return self.name
+
+    def __hash__(self) -> int:
+        return hash(self.name)

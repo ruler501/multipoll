@@ -2,7 +2,8 @@ import random
 
 from django import forms
 from wn import NOUN, ADJ, WordNet
-from wn.constants import wordnet_30_dir  # noqa
+# noinspection PyProtectedMember
+from wn.constants import wordnet_30_dir
 
 
 def get_default_secret(max_word_length: int = 4) -> str:

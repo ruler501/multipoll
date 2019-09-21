@@ -1,4 +1,4 @@
-from typing import List, Type, Dict
+from typing import List, Dict
 
 from django.db import models
 
@@ -25,11 +25,9 @@ class ApprovalPoll(PollBase):
 
     @property
     def formatted_votes(self) -> List[str]:
-        options_with_votes = self.order_options(self.options, self.all_votes)
-        votes = list(zip(*options_with_votes))[1]
-        # noinspection PyTypeChecker
-        return [f"({self.calculate_weight(i, votes)}) {ovs[0]} ({', '.join([u.name for u, _ in ovs[1]])})"
-                for i, ovs in enumerate(options_with_votes)]
+        return [f"({'' if s is None else s}) {o} "
+                + f"({', '.join([u.name for u, w in votes if w])})"
+                for o, votes, s in self.all_votes_with_option_and_score]
 
     def create_attachment_for_option(self, ind: int) -> Dict[str, str]:
         attach = {"name": "bool_option", "text": self.options[ind], "type": "button", "value": str(ind)}
@@ -61,6 +59,3 @@ class PartialApprovalVote(PartialVoteBase):
         abstract = False
 
     poll_model = ApprovalPoll
-
-    def get_form(self) -> VForm:
-        return None

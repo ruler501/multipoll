@@ -1,7 +1,8 @@
 import abc
-from typing import List, Tuple
+from typing import List, Tuple, Type
 
-from multipoll.utils import Numeric, OptNumeric
+from multipoll.models import FullVote
+from multipoll.utils import OptNumeric
 
 Vote = Tuple['multipoll.models.User', OptNumeric]
 
@@ -10,9 +11,9 @@ class ElectoralSystemMeta(abc.ABCMeta):
     registered_systems = {}
 
     def __new__(mcs, name, bases, attrs):
-        parents = [b for b in bases if isinstance(b, ElectoralSystemMeta)]
+        parents = [b for b in bases if b is abc.ABC]
         new_type = super().__new__(mcs, name, bases, attrs)
-        if parents:
+        if not parents:
             key = getattr(new_type, 'key', None)
             if key is None:
                 key = name
@@ -25,18 +26,19 @@ class ElectoralSystemMeta(abc.ABCMeta):
         return new_type
 
 
-class ElectoralSystem(metaclass=ElectoralSystemMeta):
+# noinspection PyPep8Naming
+class electoral_system(abc.ABC, metaclass=ElectoralSystemMeta):
     @classmethod
-    def order_options(cls, options: List[str], votes: List[List[Vote]]) -> List[Tuple[str, List[Vote]]]:
-        # noinspection PyTypeChecker
-        return [p for _, p
-                in sorted(enumerate(zip(options, votes)),
-                          key=lambda o: cls.calculate_weight(o[0], votes), reverse=True)]
+    def order_options(cls, options: List[str], votes: List[FullVote]) -> List[Tuple[str, List[Vote], float]]:
+        scores = cls.generate_scores(votes)
+        return [p for p
+                in sorted(zip(options, votes, scores),
+                          key=lambda o: o[2], reverse=True)]
 
     @classmethod
     @abc.abstractmethod
-    def calculate_weight(cls, ind: int, votes: List[List[Vote]]) -> Numeric: ...
+    def generate_scores(cls, votes: List[FullVote]) -> List[float]: ...
 
 
-def get_electoral_system(key: str):
+def get_electoral_system(key: str) -> Type[electoral_system]:
     return ElectoralSystemMeta.registered_systems[key]

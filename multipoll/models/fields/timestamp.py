@@ -30,12 +30,13 @@ class TimestampField(models.CharField):
         return f'{fl:.6f}'
 
     def to_python(self, value):
-        return TimestampField.to_python_static(value)
+        return self.to_python_static(value)
 
     @staticmethod
     def from_db_value_static(value) -> datetime.datetime:
         if isinstance(value, str):
             try:
+                # noinspection SpellCheckingInspection
                 fvalue = float(value)
                 return datetime.datetime.utcfromtimestamp(fvalue)
             except ValueError:
@@ -46,12 +47,14 @@ class TimestampField(models.CharField):
             return value.replace(tzinfo=datetime.timezone.utc)
         elif isinstance(value, float):
             # TODO: Figure out why type checker says we're missing positional arguments for replace
+            # noinspection PyArgumentList
             return datetime.datetime.replace(tzinfo=datetime.timezone.utc)
 
         raise TypeError("value was not a recognized type")
 
+    # noinspection PyUnusedLocal
     def from_db_value(self, value, expression, connection, context):
-        return TimestampField.from_db_value_static(value)
+        return self.from_db_value_static(value)
 
     @staticmethod
     def get_prep_value_static(value: Union[str, datetime.datetime, float]) -> str:
@@ -65,4 +68,4 @@ class TimestampField(models.CharField):
         return dt.strftime("%Y-%m-%d %H:%M:%S.%f")
 
     def get_prep_value(self, value: Union[str, datetime.datetime, float]) -> str:
-        return TimestampField.get_prep_value_static(value)
+        return self.get_prep_value_static(value)

@@ -1,4 +1,4 @@
-from typing import Type, Dict
+from typing import Dict
 
 from django.db import models
 
@@ -33,6 +33,3 @@ class PartialMultiVote(PartialVoteBase):
         abstract = False
 
     poll_model = MultiPoll
-
-    def get_form(self) -> VForm:
-        return None

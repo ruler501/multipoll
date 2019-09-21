@@ -51,18 +51,23 @@ class FullVoteFormBase(forms.ModelForm):
             raise SuspiciousOperation("Must define poll")
         # noinspection PyUnresolvedReferences
         options = self.instance.poll.options
-        vote_lists = self.instance.poll.all_votes
-        for i, ovs in enumerate(zip(options, vote_lists)):
-            option, votes = ovs
-            our_vote = [v for v in votes if v[0] == self.instance.user]
-            if our_vote:
+        vote_list = self.instance.poll.all_votes
+        for vote in vote_list:
+            if vote.user == self.instance.user:
+                weights = vote.weights
+                break
+        else:
+            weights = [None for _ in options]
+        for i, wo in enumerate(zip(weights, options)):
+            w, o = wo
+            if w is None:
                 self.fields[f"option-{i}"] = getattr(getattr(self.poll_model, "PollMeta"),
                                                      "weight_field").formfield(required=False,
-                                                                               label=option, initial=our_vote[0][1])
+                                                                               label=o)
             else:
                 self.fields[f"option-{i}"] = getattr(getattr(self.poll_model, "PollMeta"),
                                                      "weight_field").formfield(required=False,
-                                                                               label=option)
+                                                                               label=o, initial=w)
 
     def save(self, commit=True):
         if self.errors:

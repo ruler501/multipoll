@@ -60,17 +60,6 @@ TEMPLATES = [
 WSGI_APPLICATION = 'multipoll.wsgi.application'
 
 
-# Database
-# https://docs.djangoproject.com/en/1.8/ref/settings/#databases
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-    }
-}
-
-
 # Internationalization
 # https://docs.djangoproject.com/en/1.8/topics/i18n/
 
@@ -102,6 +91,8 @@ if os.environ.get("MPOLLS_ELASTIC_APM", None):
 MIDDLEWARE = MIDDLEWARE + (
     'django.middleware.common.CommonMiddleware',
 )
+
+DATABASES = {}
 
 # Honor the 'X-Forwarded-Proto' header for request.is_secure()
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')

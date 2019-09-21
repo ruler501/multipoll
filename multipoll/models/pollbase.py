@@ -1,7 +1,7 @@
-import datetime
 import json
 import logging
 import math
+from collections import defaultdict
 
 from typing import List, Tuple, TypeVar, Type, Optional, Dict
 
@@ -9,7 +9,7 @@ from django import forms
 from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import PermissionDenied
 from django.db import models
-from django.db.models import QuerySet, Manager
+from django.db.models import Manager
 from django.db.models.base import ModelBase
 from django.shortcuts import get_object_or_404
 from typedmodels.models import TypedModel
@@ -33,7 +33,7 @@ class PollBase(TypedModel):
 
     MAX_OPTIONS = 99
 
-    timestamp: datetime.datetime = TimestampField(primary_key=True)
+    timestamp: str = TimestampField(primary_key=True)
     channel: str = models.CharField(max_length=9, null=False)
     question: str = models.CharField(max_length=200, null=False)
     options: List[str] = ArrayField(models.CharField(max_length=100, null=False), null=False, size=MAX_OPTIONS)
@@ -57,56 +57,51 @@ class PollBase(TypedModel):
             return None
 
     @property
-    def all_votes(self) -> List[List[Vote]]:
-        if self.timestamp:
-            partial = self.partial_votes
-            complete = self.full_votes
-            all_votes = [a + b for a, b in zip(partial, complete)]
-            return [sorted(votes) for votes in all_votes]
-        else:
-            return [[] for _ in self.options]
+    def all_votes(self) -> Dict[User, 'FullVote']:
+        votes = self.full_votes
+        votes.update(self.partial_votes)
+        return votes
+
+    @property
+    def all_votes_with_option_and_score(self) -> List[Tuple[str, List[Vote], float]]:
+        return self.order_options(self.options, self.all_votes)
 
     @property
     def formatted_votes(self) -> List[str]:
-        options_with_votes = self.order_options(self.options, self.all_votes)
-        votes = list(zip(*options_with_votes))[1]
-        # noinspection PyTypeChecker
-        return [f"({self.calculate_weight(i, votes)}) {ovs[0]} ({', '.join([f'{u}[{w}]' for u, w in ovs[1] if w is not None])})"
-                for i, ovs in enumerate(options_with_votes)]
+        return [f"({'' if s is None else s}) {o} "
+                + f"({', '.join([f'{u.name}[{w}]' for u, w in votes if w is not None])})"
+                for o, votes, s in self.all_votes_with_option_and_score]
 
     @property
-    def partial_votes(self) -> List[List[Vote]]:
-        votes: List[List[Vote]] = [[] for _ in self.options]
-        vote: PartialVote
+    def partial_votes(self) -> Dict[User, 'FullVote']:
+        # noinspection PyPep8Naming
+        FullVoteType = getattr(self, "FullVoteType")
+        votes: Dict[User, 'FullVote'] = defaultdict(FullVoteType)
+        # noinspection PyPep8Naming
+        PartialVoteType = getattr(self, "PartialVoteType")
+        vote: PartialVoteType
         partial_vote_set = getattr(self, "PartialVoteType").name.lower() + "_set"
         for vote in getattr(self, partial_vote_set).all():
-            weight = getattr(vote, 'weight')
-            logging.info(f'{vote.option} -- {weight}')
-            if weight is not None and weight not in (False, "off", "False", "false", "f"):
-                votes[vote.option].append((vote.user, vote.weight))
-        votes = [sorted(option, key=lambda v: v[0].name) for option in votes]
+            if vote.weight is not None and vote.weight not in (False, "off", "False", "false", "f"):
+                votes[vote.user].weights[vote.option] = vote.weight
         return votes
 
     @property
-    def full_votes(self) -> List[List[Vote]]:
-        votes: List[List[Vote]] = [[] for _ in self.options]
-        vote: FullVote
-        for vote in getattr(self, getattr(self, "FullVoteType").name.lower() + "_set").all():
-            for option, weight in vote.options:
-                ind = self.options.index(option)
-                votes[ind].append((vote.user, weight))
-        votes = [sorted(option, key=lambda v: v[0].name) for option in votes]
+    def full_votes(self) -> Dict[User, 'FullVote']:
+        # noinspection PyPep8Naming
+        FullVoteType = getattr(self, "FullVoteType")
+        votes: Dict[User, 'FullVote'] = defaultdict(FullVoteType)
+        full_vote_set = FullVoteType.name.lower() + "_set"
+        vote: FullVoteType
+        for vote in getattr(self, full_vote_set).all():
+            votes[vote.user] = vote
         return votes
 
     @classmethod
-    def order_options(cls: Type['Poll'], options: List[str], votes: List[List[Vote]]) -> List[Tuple[str, List[Vote]]]:
+    def order_options(cls: Type['Poll'], options: List[str],
+                      votes: Dict[User, 'FullVote']) -> List[Tuple[str, List[Vote], float]]:
         system = get_electoral_system(cls.default_system)
-        return system.order_options(options, votes)
-
-    @classmethod
-    def calculate_weight(cls: Type['Poll'], ind: int, votes: List[List[Vote]]) -> Numeric:
-        system = get_electoral_system(cls.default_system)
-        return system.calculate_weight(ind, votes)
+        return system.order_options(options, list(votes.values()))
 
     def get_absolute_url(self) -> Optional[str]:
         if self.timestamp:
@@ -147,7 +142,7 @@ class PollBase(TypedModel):
     def update_poll(self) -> None:
         newline = '\n'
         text = f"*{self.question}*\n{self.get_absolute_url()}\n{newline.join(self.formatted_votes)}"
-        attachments = self.format_attachments(self.options)
+        attachments = self.format_attachments()
         slack.update_message(self.channel, self.timestamp_str, text, attachments)
 
     def save(self, force_insert=False, force_update=False, using=None,
@@ -175,9 +170,9 @@ class FullVoteMetaClass(ModelBase):
             _meta = attrs['Meta']
             poll_model = attrs["poll_model"]
             attrs['poll'] = models.ForeignKey(poll_model, on_delete=models.CASCADE, null=False,
-                                                  related_name=f"{name.lower()}_set")
+                                              related_name=f"{name.lower()}_set")
             attrs['weights'] = ArrayField(getattr(getattr(poll_model, "PollMeta"), "weight_field").clone(),
-                                              size=PollBase.MAX_OPTIONS, default=default_options_inner)
+                                          size=PollBase.MAX_OPTIONS, default=default_options_inner)
             setattr(_meta, "constraints", (models.UniqueConstraint(fields=('poll', 'user'),
                                                                    name=f'Single{name}Copy'),))
 
@@ -185,11 +180,11 @@ class FullVoteMetaClass(ModelBase):
 
         bases = bases + (models.Model,)
 
-        newtype = super().__new__(mcs, name, bases, attrs)
+        new_type = super().__new__(mcs, name, bases, attrs)
         if parents:
-            poll_model = getattr(newtype, "poll_model")
-            setattr(poll_model, "FullVoteType", newtype)
-        return newtype
+            poll_model = getattr(new_type, "poll_model")
+            setattr(poll_model, "FullVoteType", new_type)
+        return new_type
 
 
 class FullVoteBase(metaclass=FullVoteMetaClass):
@@ -251,7 +246,7 @@ class PartialVoteMetaClass(ModelBase):
             _meta = attrs['Meta']
             poll_model = attrs["poll_model"]
             attrs['poll'] = models.ForeignKey(poll_model, on_delete=models.CASCADE, null=False,
-                                                  related_name=f"{name.lower()}_set")
+                                              related_name=f"{name.lower()}_set")
             attrs['weight'] = getattr(getattr(poll_model, "PollMeta"), "weight_field").clone()
             setattr(_meta, "constraints", (models.UniqueConstraint(fields=('poll', 'option', 'user',),
                                                                    name=f'Single{name}Copy'),))
@@ -261,11 +256,11 @@ class PartialVoteMetaClass(ModelBase):
 
         bases = bases + (models.Model,)
 
-        newtype = super().__new__(mcs, name, bases, attrs)
+        new_type = super().__new__(mcs, name, bases, attrs)
         if parents:
-            poll_model = getattr(newtype, "poll_model")
-            setattr(poll_model, "PartialVoteType", newtype)
-        return newtype
+            poll_model = getattr(new_type, "poll_model")
+            setattr(poll_model, "PartialVoteType", new_type)
+        return new_type
 
 
 class PartialVoteBase(metaclass=PartialVoteMetaClass):
@@ -287,8 +282,6 @@ class PartialVoteBase(metaclass=PartialVoteMetaClass):
         # noinspection PyUnresolvedReferences
         super().save(force_insert, force_update, using, update_fields)
         self.poll.update_poll()
-
-    def get_form(self) -> VForm: ...
 
     @classmethod
     def find_or_create(cls: Type['PartialVote'], poll: Poll, user: User, option: int) -> 'PartialVote':

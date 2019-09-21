@@ -54,6 +54,7 @@ def unique_list(seq: Iterable[T], id_function: Callable[[T], U] = lambda x: x) -
 
 
 class ClassProperty(object):
+    # noinspection SpellCheckingInspection
     def __init__(self, fget):
         self.fget = fget
 
