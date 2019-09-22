@@ -3,18 +3,17 @@ import inspect
 import json
 import logging
 import os
-from typing import Optional, Type
+from typing import Dict, List, Optional, Union
 
 from django.core import serializers
 from django.db import models
 from django.http import HttpRequest, HttpResponse, HttpResponseBadRequest
-from django.shortcuts import render, redirect
+from django.shortcuts import redirect, render
 from django.views.decorators.csrf import csrf_exempt
 
-from multipoll import utils, slack
-from multipoll.forms import NameAndSecretForm, FullApprovalVoteForm
-from multipoll.forms.fullmultivote import FullMultiVoteForm
-from multipoll.models import User, Poll, PollBase, ApprovalPoll, MultiPoll
+from multipoll import slack, utils
+from multipoll.forms import FullApprovalVoteForm, FullMultiVoteForm, NameAndSecretForm
+from multipoll.models import ApprovalPoll, MultiPoll, PollBase, User
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +48,7 @@ def server_status(request: HttpRequest) -> HttpResponse:
 @csrf_exempt
 def interactive_button(request: HttpRequest) -> HttpResponse:
     normalize_post(request)
-    
+
     error_code = check_token(request)
     if error_code is not None:
         return error_code
@@ -70,13 +69,13 @@ def interactive_button(request: HttpRequest) -> HttpResponse:
     elif payload['callback_id'] == "options":
         event = payload["actions"][0]
         if event["name"] == "addMore":
-            elements = [{
+            elements: List[Dict[str, Union[bool, str]]] = [{
                 "type": "text",
                 "label": "New Option",
                 "name": "new_option"
             }]
-            slack.create_dialog(payload['trigger_id'], "Add an Option", payload['original_message']['ts'], "newOption",
-                                elements)
+            slack.create_dialog(payload['trigger_id'], "Add an Option",
+                                payload['original_message']['ts'], "newOption", elements)
         elif event["name"] == "bool_option":
             poll = PollBase.timestamped(payload['original_message']['ts'])
             voted_index = int(event['value'])
@@ -110,7 +109,7 @@ def interactive_button(request: HttpRequest) -> HttpResponse:
 @csrf_exempt
 def slash_poll(request: HttpRequest) -> HttpResponse:
     normalize_post(request)
-    
+
     error_code = check_token(request)
     if error_code is not None:
         return error_code
@@ -131,7 +130,6 @@ def slash_poll(request: HttpRequest) -> HttpResponse:
     # all data ready for initial message at this point
     logger.debug("Options: %s", options)
 
-    cls: Type[Poll]
     if request.POST["command"] == "/apoll":
         cls = ApprovalPoll
     elif request.POST["command"] == "/mpoll":
@@ -144,8 +142,8 @@ def slash_poll(request: HttpRequest) -> HttpResponse:
 
 
 # noinspection PyPep8Naming
-def JsonModelResponse(model: models.Model, status_code: int = 200, location: str = None, request: HttpRequest = None) \
-        -> HttpResponse:
+def JsonModelResponse(model: models.Model, status_code: int = 200, location: Optional[str] = None,
+                      request: Optional[HttpRequest] = None) -> HttpResponse:
     serialized = serializers.serialize('json', [model])
     response = HttpResponse(serialized[1:-1])
     response.status_code = status_code
@@ -174,7 +172,7 @@ def create_poll(request: HttpRequest) -> HttpResponse:
             return HttpResponseBadRequest()
         poll = cls.add(question=question, options=options, channel=channel)
         poll.save()
-        return JsonModelResponse(poll, 201, poll.get_absolute_url(), request)
+        return JsonModelResponse(poll, 201, poll.get_absolute_url())
     else:
         return HttpResponseBadRequest()
 
@@ -194,9 +192,10 @@ def vote_on_poll(request: HttpRequest, poll_timestamp: str) -> HttpResponse:
         submitted_form = NameAndSecretForm(request.GET)
         if submitted_form.is_valid():
             poll = PollBase.timestamped(poll_timestamp)
-            vote = poll.FullVoteType.find_or_create_verified(poll,
-                                                             submitted_form.cleaned_data['user_name'],
-                                                             submitted_form.cleaned_data['user_secret'])
+            user_name = submitted_form.cleaned_data['user_name']
+            user_secret = submitted_form.cleaned_data['user_secret']
+            vote = poll.FullVoteType.find_and_validate_or_create_verified(poll, user_name,
+                                                                          user_secret)
             form = vote.get_form()
             return render(request, "vote_on_poll.html",
                           {'form': form, 'path': request.get_full_path(force_append_slash=True)})
@@ -226,8 +225,8 @@ def vote_on_poll(request: HttpRequest, poll_timestamp: str) -> HttpResponse:
                 submitted_form.save()
                 return redirect(poll.get_absolute_url() + "/results")
             else:
-                logger.warning(f"Failed to clean submitted form: {submitted_form.cleaned_data} had errors "
-                               + f"{submitted_form.errors} and "
+                logger.warning(f"Failed to clean submitted form: {submitted_form.cleaned_data} "
+                               + f"had errors {submitted_form.errors} and "
                                + f"timestamp {submitted_form.cleaned_data['poll'].timestamp_str}")
                 return HttpResponseBadRequest()
         else:
@@ -241,3 +240,5 @@ def poll_results(request: HttpRequest, poll_timestamp: str) -> HttpResponse:
         poll = PollBase.timestamped(poll_timestamp)
         return render(request, "poll_results.html",
                       {'poll': poll})
+    else:
+        return HttpResponseBadRequest()

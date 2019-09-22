@@ -9,6 +9,8 @@
       <w>fullvote</w>
       <w>mpolls</w>
       <w>multipoll</w>
+      <w>mypy</w>
+      <w>noqa</w>
       <w>partialvote</w>
       <w>singlepoll</w>
     </words>

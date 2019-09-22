@@ -1,15 +1,18 @@
-from typing import Iterable, Tuple, List
+from __future__ import annotations  # noqa: T484
 
-from multipoll.models import FullVote
-from multipoll.utils import OptNumeric
+from typing import Iterable, List, Optional, Tuple, TypeVar
+
+import multipoll.models
+
+Numeric = TypeVar('Numeric')
 
 
 class Ranking:
-    def __init__(self, vote: FullVote, collapse_ties: bool = True):
-        enumerated_weights: Iterable[Tuple[int, OptNumeric]] = enumerate(vote.weights)
+    def __init__(self, vote: multipoll.models.FullVoteBase[Numeric], collapse_ties: bool = True):
+        enumerated_weights: Iterable[Tuple[int, Optional[Numeric]]] = enumerate(vote.weights)
         prelims = sorted(enumerated_weights, key=lambda x: x[1] or 0, reverse=not collapse_ties)
-        weights: List[OptNumeric] = [None for _ in prelims]
-        cur: OptNumeric = prelims[0][1]
+        weights: List[Optional[float]] = [None for _ in prelims]
+        cur: Optional[Numeric] = prelims[0][1]
         score: float = 1
         if collapse_ties:
             for i, w in prelims:

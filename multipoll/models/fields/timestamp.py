@@ -1,71 +1,42 @@
 import datetime
-
-from typing import Union, Any, Optional
+from typing import Any, Optional, Union
 
 from django.db import models
 
+dt_format = "%Y-%m-%d %H:%M:%S.%f"
+
 
 class TimestampField(models.CharField):
-    def __init__(self, **kwargs: Optional[Any]):
+    def __init__(self, *args: Optional[Any], **kwargs: Optional[Any]):
         kwargs['max_length'] = 50
-        super(TimestampField, self).__init__(**kwargs)
+        super(TimestampField, self).__init__(*args, **kwargs)  # noqa: T484
 
-    def db_type(self, connection):
+    def db_type(self, _: Any) -> str:
         return 'TIMESTAMP'
 
-    @staticmethod
-    def to_python_static(value: Union[str, datetime.datetime, float]) -> str:
-        if isinstance(value, str):
-            try:
-                fl = float(value)
-            except ValueError:
-                # TODO: Investigate type checker saying fromisoformat doesn't exist.
-                fl = datetime.datetime.fromisoformat(value).replace(tzinfo=datetime.timezone.utc).timestamp()
-        elif isinstance(value, datetime.datetime):
-            fl = value.replace(tzinfo=datetime.timezone.utc).timestamp()
-        elif isinstance(value, float):
-            fl = value
-        else:
-            raise TypeError("value was not a recognized type")
-        return f'{fl:.6f}'
+    def to_python(self, value: Union[str, datetime.datetime, float]) -> str:
+        return f'{self.normalize_to_timestamp(value):.6f}'
 
-    def to_python(self, value):
-        return self.to_python_static(value)
+    @classmethod
+    def normalize_to_timestamp(cls, value: Union[str, datetime.datetime, float]) -> str:
+        return f'{cls.normalize_to_datetime(value).timestamp():.6f}'
 
     @staticmethod
-    def from_db_value_static(value) -> datetime.datetime:
-        if isinstance(value, str):
-            try:
-                # noinspection SpellCheckingInspection
-                fvalue = float(value)
-                return datetime.datetime.utcfromtimestamp(fvalue)
-            except ValueError:
-                # TODO: Investigate type checker saying fromisoformat doesn't exist.
-                return datetime.datetime.fromisoformat(value).replace(tzinfo=datetime.timezone.utc)
-        elif isinstance(value, datetime.datetime):
-            # TODO: Figure out why type checker says we're missing positional arguments for replace
-            return value.replace(tzinfo=datetime.timezone.utc)
-        elif isinstance(value, float):
-            # TODO: Figure out why type checker says we're missing positional arguments for replace
-            # noinspection PyArgumentList
-            return datetime.datetime.replace(tzinfo=datetime.timezone.utc)
-
-        raise TypeError("value was not a recognized type")
-
-    # noinspection PyUnusedLocal
-    def from_db_value(self, value, expression, connection, context):
-        return self.from_db_value_static(value)
-
-    @staticmethod
-    def get_prep_value_static(value: Union[str, datetime.datetime, float]) -> str:
+    def normalize_to_datetime(value: Union[str, datetime.datetime, float]) -> datetime.datetime:
         if isinstance(value, datetime.datetime):
             dt = value
         else:
             try:
-                dt = datetime.datetime.utcfromtimestamp(float(value))
+                value = float(value)
+                dt = datetime.datetime.utcfromtimestamp(value)
             except ValueError:
-                return value
-        return dt.strftime("%Y-%m-%d %H:%M:%S.%f")
+                dt = datetime.datetime.strptime(str(value), dt_format)
+        return dt
+
+    # noinspection PyUnusedLocal
+    def from_db_value(self, value: Union[datetime.datetime, str, float],
+                      *_: Any) -> datetime.datetime:
+        return self.normalize_to_datetime(value)
 
     def get_prep_value(self, value: Union[str, datetime.datetime, float]) -> str:
-        return self.get_prep_value_static(value)
+        return self.normalize_to_datetime(value).strftime(dt_format)

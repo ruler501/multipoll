@@ -1,8 +1,12 @@
+from typing import Optional, TypeVar
+from typing import cast
+
 from django import forms
 
 from multipoll.forms.fullvotebase import FullVoteFormBase
-from multipoll.models.approvalpoll import FullApprovalVote
-from multipoll.utils import OptNumeric
+from multipoll.models import FullApprovalVote
+
+Numeric = TypeVar("Numeric")
 
 
 class FullApprovalVoteForm(FullVoteFormBase):
@@ -12,8 +16,8 @@ class FullApprovalVoteForm(FullVoteFormBase):
         abstract = False
         model = FullApprovalVote
 
-    def sanitize_weight(self, weight: OptNumeric) -> OptNumeric:
+    def sanitize_weight(self, weight: Optional[Numeric]) -> Optional[Numeric]:
         if weight is None or weight in ("off", 0, False, "false", "False", "f", ""):
-            return False
+            return cast(Numeric, False)
         else:
-            return True
+            return cast(Numeric, True)

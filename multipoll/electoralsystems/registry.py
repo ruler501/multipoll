@@ -1,16 +1,18 @@
+from __future__ import annotations  # noqa: T484
+
 import abc
-from typing import List, Tuple, Type
+from typing import Any, Dict, List, Optional, Tuple, Type, TypeVar
 
-from multipoll.utils import OptNumeric
+import multipoll.models
 
-Vote = Tuple['multipoll.models.User', OptNumeric]
-FullVote = 'multipoll.models.FullVote'
+Numeric = TypeVar('Numeric')
 
 
 class ElectoralSystemMeta(abc.ABCMeta):
-    registered_systems = {}
+    registered_systems: Dict[str, Type[electoral_system]] = {}
 
-    def __new__(mcs, name, bases, attrs):
+    def __new__(mcs, name: str, bases: Tuple[Type, ...],
+                attrs: Dict[str, Any]) -> Type[electoral_system]:
         parents = [b for b in bases if b is abc.ABC]
         new_type = super().__new__(mcs, name, bases, attrs)
         if not parents:
@@ -29,15 +31,22 @@ class ElectoralSystemMeta(abc.ABCMeta):
 # noinspection PyPep8Naming
 class electoral_system(abc.ABC, metaclass=ElectoralSystemMeta):
     @classmethod
-    def order_options(cls, options: List[str], votes: List[FullVote]) -> List[Tuple[str, List[Vote], float]]:
+    def order_options(cls, options: List[str],
+                      votes: List[multipoll.models.FullVoteBase[Numeric]]) \
+            -> List[Tuple[str, List[Tuple[multipoll.models.User, Optional[Numeric]]], float]]:
         scores = cls.generate_scores(votes)
-        return [p for p
-                in sorted(zip(options, votes, scores),
-                          key=lambda o: o[2], reverse=True)]
+        collected_votes: List[List[Tuple[multipoll.models.User, Optional[Numeric]]]] = \
+            [[] for _ in options]
+        for vote in votes:
+            for i, w in enumerate(vote.weights):
+                if w:
+                    collected_votes[i].append((vote.user, w))
+        return sorted(zip(options, collected_votes, scores), key=lambda o: o[2], reverse=True)
 
     @classmethod
     @abc.abstractmethod
-    def generate_scores(cls, votes: List[FullVote]) -> List[float]: ...
+    def generate_scores(cls, votes: List[multipoll.models.FullVoteBase]) -> List[float]:
+        ...
 
 
 def get_electoral_system(key: str) -> Type[electoral_system]:

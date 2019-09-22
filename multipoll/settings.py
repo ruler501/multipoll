@@ -75,8 +75,8 @@ USE_TZ = True
 if os.environ.get("MPOLLS_ELASTIC_APM", None):
     # To send performance metrics, add our tracing middleware:
     MIDDLEWARE = MIDDLEWARE + (
-            'elasticapm.contrib.django.middleware.TracingMiddleware',
-            'elasticapm.contrib.django.middleware.Catch404Middleware'
+        'elasticapm.contrib.django.middleware.TracingMiddleware',
+        'elasticapm.contrib.django.middleware.Catch404Middleware'
     )
     ELASTIC_APM = {
         # Set required service name. Allowed characters:

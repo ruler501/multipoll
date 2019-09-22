@@ -1,12 +1,12 @@
 import logging
 import os
-
-from typing import TypeVar, List, Callable, Iterable, Set, Optional
+from typing import Callable, Generic, Iterable, List, Optional, Set, Type, TypeVar
+from typing import cast
 
 T = TypeVar('T')
+TContra = TypeVar('TContra', contravariant=True)
 U = TypeVar('U')
-Numeric = TypeVar('Numeric', bool, int, float)
-OptNumeric = Optional[Numeric]
+UCov = TypeVar('UCov', covariant=True)
 
 logger = logging.getLogger(__name__)
 
@@ -38,25 +38,29 @@ def collapse_lists(lists: List[List[str]]) -> List[List[str]]:
 
 
 # TODO: Figure out how to make the type signature work with the default argument
-def unique_iter(seq: Iterable[T], id_function: Callable[[T], U] = lambda x: x) -> Iterable[T]:
+def unique_iter(seq: Iterable[T], key_function: Optional[Callable[[T], U]]) -> Iterable[T]:
     """Originally proposed by Andrew Dalke."""
-    seen: Set[T] = set()
+    seen: Set[U] = set()
     for x in seq:
-        y = id_function(x)
+        if key_function:
+            y = key_function(x)
+        else:
+            y = cast(U, x)
         if y not in seen:
             seen.add(y)
             yield x
 
 
+# Order preserving
 # TODO: Figure out how to make the type signature work with the default argument
-def unique_list(seq: Iterable[T], id_function: Callable[[T], U] = lambda x: x) -> List[T]:  # Order preserving
-    return list(unique_iter(seq, id_function))
+def unique_list(seq: Iterable[T], key_function: Optional[Callable[[T], U]] = None) -> List[T]:
+    return list(unique_iter(seq, key_function))
 
 
-class ClassProperty(object):
+class ClassProperty(Generic[TContra, UCov]):
     # noinspection SpellCheckingInspection
-    def __init__(self, fget):
+    def __init__(self, fget: Callable[[Type[TContra]], UCov]):
         self.fget = fget
 
-    def __get__(self, owner_self, owner_cls):
+    def __get__(self, owner_self: Optional[TContra], owner_cls: Type[TContra]) -> UCov:
         return self.fget(owner_cls)
