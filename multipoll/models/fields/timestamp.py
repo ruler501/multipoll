@@ -11,7 +11,7 @@ class TimestampField(models.CharField):
         kwargs['max_length'] = 50
         super(TimestampField, self).__init__(*args, **kwargs)  # noqa: T484
 
-    def db_type(self, _: Any) -> str:
+    def db_type(self, connection: Any) -> str:
         return 'TIMESTAMP'
 
     def to_python(self, value: Union[str, datetime.datetime, float]) -> Optional[str]:
@@ -21,13 +21,18 @@ class TimestampField(models.CharField):
 
     @classmethod
     def normalize_to_timestamp(cls, value: Union[str, datetime.datetime, float]) -> Optional[str]:
-        if value == '':
+        dt = cls.normalize_to_datetime(value)
+        if dt is None:
             return None
-        return f'{cls.normalize_to_datetime(value).timestamp():.6f}'
+        else:
+            return f'{dt.timestamp():.6f}'
 
     @staticmethod
-    def normalize_to_datetime(value: Union[str, datetime.datetime, float]) -> datetime.datetime:
-        if isinstance(value, datetime.datetime):
+    def normalize_to_datetime(value: Union[str, datetime.datetime, float]) \
+            -> Optional[datetime.datetime]:
+        if value == '':
+            return None
+        elif isinstance(value, datetime.datetime):
             dt = value
         else:
             try:
@@ -39,8 +44,11 @@ class TimestampField(models.CharField):
 
     # noinspection PyUnusedLocal
     def from_db_value(self, value: Union[datetime.datetime, str, float],
-                      *_: Any) -> datetime.datetime:
+                      *_: Any) -> Optional[datetime.datetime]:
         return self.normalize_to_datetime(value)
 
-    def get_prep_value(self, value: Union[str, datetime.datetime, float]) -> str:
-        return self.normalize_to_datetime(value).strftime(dt_format)
+    def get_prep_value(self, value: Union[str, datetime.datetime, float]) -> Optional[str]:
+        dt = self.normalize_to_datetime(value)
+        if dt is None:
+            return None
+        return dt.strftime(dt_format)

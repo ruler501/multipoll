@@ -16,10 +16,13 @@ class borda(electoral_system):
 
     @classmethod
     def generate_scores(cls, votes: List[multipoll.models.FullVoteBase[Numeric]]) -> List[float]:
+        if len(votes) == 0:
+            return []
         rankings = [Ranking(vote) for vote in votes]
-        scores: List[float] = [0.0 for _ in votes[0].weights]
+        option_count = len(votes[0].poll.options)
+        scores: List[float] = [0.0 for _ in range(option_count)]
         for ranking in rankings:
-            for i, w in enumerate(ranking.weights):
+            for i, w in enumerate(ranking.weights[:option_count]):
                 if w is not None:
                     scores[i] += w
         return scores
