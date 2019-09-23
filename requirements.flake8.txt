@@ -2,7 +2,7 @@ flake8==3.7.8
 flake8-builtins==1.4.1
 flake8-docstrings==1.4.0
 flake8-import-order==0.18.1
+flake8-import-order-ruler501==0.18.1.1
 git+https://github.com/ambv/flake8-mypy.git@616eeb9
 flake8-rst-docstrings==0.0.11
 django-stubs==1.1.0
-flake8-import-order-ruler501==0.18.1
