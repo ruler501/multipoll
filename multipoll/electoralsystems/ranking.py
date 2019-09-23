@@ -9,7 +9,9 @@ Numeric = TypeVar('Numeric')
 
 class Ranking:
     def __init__(self, vote: multipoll.models.FullVoteBase[Numeric], collapse_ties: bool = True):
-        enumerated_weights: Iterable[Tuple[int, Optional[Numeric]]] = enumerate(vote.weights)
+        options_count = len(vote.poll.options)
+        enumerated_weights: Iterable[Tuple[int, Optional[Numeric]]] = \
+            enumerate(vote.weights[:options_count])
         prelims = sorted(enumerated_weights, key=lambda x: x[1] or 0, reverse=not collapse_ties)
         weights: List[Optional[float]] = [None for _ in prelims]
         cur: Optional[Numeric] = prelims[0][1]

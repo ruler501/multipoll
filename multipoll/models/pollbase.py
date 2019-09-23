@@ -84,6 +84,8 @@ class PollBase(TypedModel):
         for vote in getattr(self, partial_vote_set).all():
             if vote.weight is not None and vote.weight not in (False, "off", "False", "false", "f"):
                 votes[vote.user].weights[vote.option] = vote.weight
+                votes[vote.user].user = vote.user
+                votes[vote.user].poll = self
         return votes
 
     @property
