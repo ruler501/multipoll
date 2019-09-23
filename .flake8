@@ -5,3 +5,4 @@ import-order-style = ruler501
 max-line-length = 100
 max-complexity = 10
 ignore = D100, D101, D102, D103, D104, D105, D106, D107, D108, D413, W292, W503
+format = ${cyan}%(path)s${reset}:${yellow_bold}%(row)d${reset}:${green_bold}%(col)d${reset}: ${red_bold}%(code)s${reset} %(text)s

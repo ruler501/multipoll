@@ -76,10 +76,10 @@ class PollBase(TypedModel):
     @property
     def partial_votes(self) -> Dict[User, FullVote]:
         # noinspection PyPep8Naming
-        FullVoteType = getattr(self, "FullVoteType")
+        FullVoteType = getattr(self, "FullVoteType")  # noqa: N806
         votes: Dict[User, FullVote] = defaultdict(FullVoteType)
         # noinspection PyPep8Naming
-        PartialVoteType = getattr(self, "PartialVoteType")
+        PartialVoteType = getattr(self, "PartialVoteType")  # noqa: N806
         partial_vote_set = PartialVoteType.name.lower() + "_set"
         for vote in getattr(self, partial_vote_set).all():
             if vote.weight is not None and vote.weight not in (False, "off", "False", "false", "f"):
@@ -91,7 +91,7 @@ class PollBase(TypedModel):
     @property
     def full_votes(self) -> Dict[User, FullVote]:
         # noinspection PyPep8Naming
-        FullVoteType = getattr(self, "FullVoteType")
+        FullVoteType = getattr(self, "FullVoteType")  # noqa: N806
         votes: Dict[User, FullVote] = defaultdict(FullVoteType)
         full_vote_set = FullVoteType.name.lower() + "_set"
         vote: FullVote
@@ -164,7 +164,7 @@ def default_options_inner() -> List[Optional[Numeric]]:
 
 
 class FullVoteMeta(ModelBase):
-    def __new__(mcs, name: str, bases: Tuple[Type, ...],
+    def __new__(mcs, name: str, bases: Tuple[Type, ...],  # noqa: N804
                 attrs: Dict[str, Any]) -> Type[FullVoteBase]:
         attrs['name'] = name
         parents = [b for b in bases if isinstance(b, FullVoteMeta)]
@@ -240,8 +240,8 @@ class FullVoteBase(models.Model, metaclass=FullVoteMeta):
 
 
 class PartialVoteMeta(ModelBase):
-    def __new__(mcs, name: str, bases: Tuple[Type, ...], attrs: Dict[str, Any])\
-            -> Type[PartialVote]:
+    def __new__(mcs, name: str, bases: Tuple[Type, ...],  # noqa: N804
+                attrs: Dict[str, Any]) -> Type[PartialVote]:
         attrs['name'] = name
         parents = [b for b in bases if isinstance(b, PartialVoteMeta)]
         poll_model: Type[PollBase]

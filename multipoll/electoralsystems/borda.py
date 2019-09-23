@@ -10,7 +10,7 @@ Numeric = TypeVar('Numeric')
 
 
 # noinspection PyPep8Naming
-class borda(electoral_system):
+class borda(electoral_system):  # noqa: N801
     key = "borda"
     label = "Borda Count"
 

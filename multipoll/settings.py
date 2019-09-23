@@ -25,7 +25,6 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = os.environ.get("MPOLLS_SECRET_KEY", "")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-# DEBUG = True
 DEBUG = False
 DEBUG_PROPAGATE_EXCEPTIONS = DEBUG
 
@@ -84,7 +83,6 @@ if os.environ.get("MPOLLS_ELASTIC_APM", None):
         'SERVICE_NAME': 'multipoll',
         # Set custom APM Server URL (default: http://localhost:8200)
         'SERVER_URL': 'http://localhost:8200',
-        'DEBUG': True,
         'DJANGO_TRANSACTION_NAME_FROM_ROUTE': True
     }
 
