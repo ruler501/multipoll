@@ -14,11 +14,15 @@ class TimestampField(models.CharField):
     def db_type(self, _: Any) -> str:
         return 'TIMESTAMP'
 
-    def to_python(self, value: Union[str, datetime.datetime, float]) -> str:
+    def to_python(self, value: Union[str, datetime.datetime, float]) -> Optional[str]:
+        if value == '':
+            return None
         return f'{self.normalize_to_timestamp(value):.6f}'
 
     @classmethod
-    def normalize_to_timestamp(cls, value: Union[str, datetime.datetime, float]) -> str:
+    def normalize_to_timestamp(cls, value: Union[str, datetime.datetime, float]) -> Optional[str]:
+        if value == '':
+            return None
         return f'{cls.normalize_to_datetime(value).timestamp():.6f}'
 
     @staticmethod
