@@ -41,5 +41,12 @@ pipeline {
         }
       }
     }
+    stage('Check Migrations are up to date') {
+      steps {
+        withPythonEnv('System-CPython3.7') {
+          sh 'python migrate.py makemigrations --check'
+        }
+      }
+    }
   }
 }
