@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, Generic, List, Optional, Tuple, Type, TypeVar
+from typing import Any, ClassVar, Dict, Generic, List, Optional, Tuple, Type, TypeVar
 
 from django import forms
 from django.contrib.postgres.fields import ArrayField
@@ -21,20 +21,37 @@ logger = logging.getLogger(__name__)
 
 
 class PollBase(TypedModel, Generic[_Numeric]):
+    class Meta:
+        get_latest_by: str
+        ordering: Tuple[str, ...]
+        indexes: Tuple[models.Index, ...]
+
     FullVoteType: Type[FullVoteBase[_Numeric]]
     PartialVoteType: Type[PartialVoteBase[_Numeric]]
     timestamp: TimestampField
     channel: models.CharField[str, str]
     question: models.CharField[str, str]
     options: ArrayField[List[str], List[str]]
-
-    class Meta:
-        get_latest_by: str
-        ordering: Tuple[str, ...]
-        indexes: Tuple[models.Index, ...]
-
     supported_systems: Tuple[str, ...]
     default_system: str
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        ...
+
+    def post_poll(self) -> None:
+        ...
+
+    def update_poll(self) -> None:
+        ...
+
+    def get_absolute_url(self) -> Optional[str]:
+        ...
+
+    def create_attachment_for_option(self, ind: int) -> Dict[str, str]:
+        ...
+
+    def format_attachments(self, include_add_more: bool) -> str:
+        ...
 
     @property
     def timestamp_str(self) -> Optional[str]:
@@ -65,30 +82,12 @@ class PollBase(TypedModel, Generic[_Numeric]):
                       votes: Dict[User, _FullVote]) -> List[Tuple[str, List[_Vote], float]]:
         ...
 
-    def get_absolute_url(self) -> Optional[str]:
-        ...
-
-    def create_attachment_for_option(self, ind: int) -> Dict[str, str]:
-        ...
-
-    def format_attachments(self, include_add_more: bool) -> str:
-        ...
-
     @classmethod
     def add(cls: Type[_Poll], channel: str, question: str, options: List[str]) -> _Poll:
         ...
 
     @classmethod
     def timestamped(cls: Type[_Poll], timestamp: str) -> _Poll:
-        ...
-
-    def post_poll(self) -> None:
-        ...
-
-    def update_poll(self) -> None:
-        ...
-
-    def save(self, *args: Any, **kwargs: Any) -> None:
         ...
 
 
@@ -103,26 +102,27 @@ class FullVoteMeta(ModelBase):
 
 
 class FullVoteBase(models.Model, Generic[_Numeric], metaclass=FullVoteMeta):
-    poll_model: Type[PollBase[_Numeric]]
-    poll: models.ForeignKey[PollBase[_Numeric], PollBase[_Numeric]]
-    weights: List[Optional[_Numeric]]
-    user: models.ForeignKey[User, User]
-    user_secret: models.CharField[str, str]
-    MAX_OPTIONS: int
-
     class Meta:
         abstract: bool
         ordering: Tuple[str, ...]
         indexes: Tuple[models.Index, ...]
 
-    @property
-    def options(self) -> List[Tuple[str, Optional[_Numeric]]]:
-        ...
+    MAX_OPTIONS: ClassVar[int]
+
+    poll_model: Type[PollBase[_Numeric]]
+    poll: models.ForeignKey[PollBase[_Numeric], PollBase[_Numeric]]
+    weights: List[Optional[_Numeric]]
+    user: models.ForeignKey[User, User]
+    user_secret: models.CharField[str, str]
 
     def save(self, *args: Any, **kwargs: Any) -> None:
         ...
 
     def get_form(self) -> forms.ModelForm:
+        ...
+
+    @property
+    def options(self) -> List[Tuple[str, Optional[_Numeric]]]:
         ...
 
     @classmethod
@@ -143,20 +143,20 @@ class PartialVoteMeta(ModelBase):
 
 
 class PartialVoteBase(models.Model, Generic[_Numeric], metaclass=PartialVoteMeta):
+    class Meta:
+        abstract: bool
+
     poll_model: Type[PollBase[_Numeric]]
     poll: PollBase[_Numeric]
     user: models.ForeignKey[User, User]
     option: models.PositiveSmallIntegerField[int, int]
     weight: models.Field[_Numeric, _Numeric]
 
-    class Meta:
-        abstract: bool
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        ...
 
     @property
     def chosen_option(self) -> str:
-        ...
-
-    def save(self, *args: Any, **kwargs: Any) -> None:
         ...
 
     @classmethod

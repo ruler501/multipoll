@@ -31,6 +31,11 @@ logger = logging.getLogger(__name__)
 
 
 class PollBase(TypedModel):
+    class Meta:
+        get_latest_by = "timestamp"
+        ordering = ("timestamp",)
+        indexes = (models.Index(fields=('timestamp',)),)
+
     MAX_OPTIONS: ClassVar[int] = 99
 
     timestamp = TimestampField(primary_key=True)
@@ -42,13 +47,52 @@ class PollBase(TypedModel):
                                                            null=False, blank=False,
                                                            size=MAX_OPTIONS)
 
-    class Meta:
-        get_latest_by = "timestamp"
-        ordering = ("timestamp",)
-        indexes = (models.Index(fields=('timestamp',)),)
-
     supported_systems = ("approval",)
     default_system = "approval"
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        if not self.timestamp:
+            self.post_poll()
+
+        super(PollBase, self).save(*args, **kwargs)
+
+        self.update_poll()
+
+    def get_absolute_url(self) -> Optional[str]:
+        if self.timestamp:
+            return absolute_url_without_request(f"/polls/{self.timestamp_str}/")
+        else:
+            return None
+
+    def create_attachment_for_option(self, ind: int) -> Dict[str, str]:
+        ...
+
+    def format_attachments(self, include_add_more: bool = True) -> str:
+        actions = [self.create_attachment_for_option(i) for i in range(len(self.options))]
+
+        if include_add_more:
+            actions.append({"name": "addMore", "text": "Add More", "type": "button",
+                            "value": "Add More"})
+        attachments = []
+        for i in range(int(math.ceil(len(actions) / 5.0))):
+            attachment = {"text": "", "callback_id": "options",
+                          "attachment_type": "default", "actions": actions[5 * i: 5 * i + 5]}
+            attachments.append(attachment)
+
+        return json.dumps(attachments)
+
+    def post_poll(self) -> None:
+        newline = '\n'
+        text = f"*{self.question}*\n\n{newline.join(self.formatted_votes)}"
+        attachments = self.format_attachments()
+        ts = slack.post_message(self.channel, text, attachments)
+        self.timestamp = ts
+
+    def update_poll(self) -> None:
+        newline = '\n'
+        text = f"*{self.question}*\n{self.get_absolute_url()}\n{newline.join(self.formatted_votes)}"
+        attachments = self.format_attachments()
+        slack.update_message(self.channel, self.timestamp_str, text, attachments)
 
     @property
     def timestamp_str(self) -> Optional[str]:
@@ -69,7 +113,7 @@ class PollBase(TypedModel):
 
     @property
     def formatted_votes(self) -> List[str]:
-        return [f"({'' if s is None else s}) {o} "
+        return [f"({'' if s is None else s}) {o} "  # noqa: IF100
                 + f"({', '.join([f'{u.name}[{w}]' for u, w in votes if w is not None])})"
                 for o, votes, s in self.all_votes_with_option_and_score]
 
@@ -106,29 +150,6 @@ class PollBase(TypedModel):
         system = get_electoral_system(cls.default_system)
         return system.order_options(options, list(votes.values()))
 
-    def get_absolute_url(self) -> Optional[str]:
-        if self.timestamp:
-            return absolute_url_without_request(f"/polls/{self.timestamp_str}/")
-        else:
-            return None
-
-    def create_attachment_for_option(self, ind: int) -> Dict[str, str]:
-        ...
-
-    def format_attachments(self, include_add_more: bool = True) -> str:
-        actions = [self.create_attachment_for_option(i) for i in range(len(self.options))]
-
-        if include_add_more:
-            actions.append({"name": "addMore", "text": "Add More", "type": "button",
-                            "value": "Add More"})
-        attachments = []
-        for i in range(int(math.ceil(len(actions) / 5.0))):
-            attachment = {"text": "", "callback_id": "options",
-                          "attachment_type": "default", "actions": actions[5 * i: 5 * i + 5]}
-            attachments.append(attachment)
-
-        return json.dumps(attachments)
-
     @classmethod
     def add(cls: Type[Poll], channel: str, question: str, options: List[str]) -> Poll:
         return cls.objects.create(channel=channel, question=question, options=options)
@@ -136,27 +157,6 @@ class PollBase(TypedModel):
     @classmethod
     def timestamped(cls: Type[Poll], timestamp: str) -> Poll:
         return get_object_or_404(cls, timestamp=timestamp)
-
-    def post_poll(self) -> None:
-        newline = '\n'
-        text = f"*{self.question}*\n\n{newline.join(self.formatted_votes)}"
-        attachments = self.format_attachments()
-        ts = slack.post_message(self.channel, text, attachments)
-        self.timestamp = ts
-
-    def update_poll(self) -> None:
-        newline = '\n'
-        text = f"*{self.question}*\n{self.get_absolute_url()}\n{newline.join(self.formatted_votes)}"
-        attachments = self.format_attachments()
-        slack.update_message(self.channel, self.timestamp_str, text, attachments)
-
-    def save(self, *args: Any, **kwargs: Any) -> None:
-        if not self.timestamp:
-            self.post_poll()
-
-        super(PollBase, self).save(*args, **kwargs)
-
-        self.update_poll()
 
 
 def default_options_inner() -> List[Optional[Numeric]]:
@@ -190,22 +190,17 @@ class FullVoteMeta(ModelBase):
 
 
 class FullVoteBase(models.Model, metaclass=FullVoteMeta):
-    poll_model: Type[PollBase]
-    poll: PollBase
-    user: models.ForeignKey[User, User] = models.ForeignKey(User, on_delete=models.CASCADE,
-                                                            null=False)
-    user_secret: models.CharField[str, str] = models.CharField(max_length=11, null=True)
-    weights: List
-
     class Meta:
         abstract = True
         ordering = ('poll', 'user')
         indexes = (models.Index(fields=('poll',)),)
 
-    @property
-    def options(self) -> List[Tuple[str, Optional[Numeric]]]:
-        poll: PollBase = self.poll
-        return list(zip(poll.options, self.weights))
+    poll_model: Type[PollBase]
+    poll: PollBase
+    weights: List
+    user_secret: models.CharField[str, str] = models.CharField(max_length=11, null=True)
+    user: models.ForeignKey[User, User] = models.ForeignKey(User, on_delete=models.CASCADE,
+                                                            null=False)
 
     def save(self, *args: Any, **kwargs: Any) -> None:
         # noinspection PyUnresolvedReferences
@@ -214,6 +209,11 @@ class FullVoteBase(models.Model, metaclass=FullVoteMeta):
 
     def get_form(self) -> forms.ModelForm:
         ...
+
+    @property
+    def options(self) -> List[Tuple[str, Optional[Numeric]]]:
+        poll: PollBase = self.poll
+        return list(zip(poll.options, self.weights))
 
     @classmethod
     def find_and_validate_if_exists(cls, poll: PollBase, user: User,
@@ -267,24 +267,24 @@ class PartialVoteMeta(ModelBase):
 
 
 class PartialVoteBase(models.Model, metaclass=PartialVoteMeta):
-    poll_model: Type[PollBase]
-    poll: PollBase
-
-    user: models.ForeignKey[User, User] = models.ForeignKey(User, on_delete=models.CASCADE,
-                                                            null=False)
-    option: models.PositiveSmallIntegerField[int, int] = \
-        models.PositiveSmallIntegerField(null=False)
-
     class Meta:
         abstract = True
 
-    @property
-    def chosen_option(self) -> str:
-        return self.poll.options[self.option]
+    poll_model: Type[PollBase]
+    poll: PollBase
+
+    option: models.PositiveSmallIntegerField[int, int] = \
+        models.PositiveSmallIntegerField(null=False)
+    user: models.ForeignKey[User, User] = models.ForeignKey(User, on_delete=models.CASCADE,
+                                                            null=False)
 
     def save(self, *args: Any, **kwargs: Any) -> None:
         super(PartialVoteBase, self).save(*args, **kwargs)
         self.poll.update_poll()
+
+    @property
+    def chosen_option(self) -> str:
+        return self.poll.options[self.option]
 
     @classmethod
     def find_or_create(cls: Type[PartialVote], poll: PollBase, user: User,

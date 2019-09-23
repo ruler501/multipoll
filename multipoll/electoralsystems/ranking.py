@@ -25,7 +25,8 @@ class Ranking:
                         score += 1
                         cur = w
                     weights[i] = score
-            weights = [None if x is None else (x + len(prelims) - score) for x in weights]
+            weights = [None if x is None else (x + len(prelims) - score)  # noqa: IF100
+                       for x in weights]
         else:
             for i, w in prelims:
                 if w is None:

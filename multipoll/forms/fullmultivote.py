@@ -5,8 +5,8 @@ from multipoll.models import FullMultiVote
 
 
 class FullMultiVoteForm(FullVoteFormBase):
-    _method = forms.CharField(initial="multivote", widget=forms.HiddenInput())
-
     class Meta(FullVoteFormBase.Meta):
         abstract = False
         model = FullMultiVote
+
+    _method = forms.CharField(initial="multivote", widget=forms.HiddenInput())
