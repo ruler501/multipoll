@@ -18,7 +18,7 @@ class ApprovalPoll(PollBase):
 
     @property
     def formatted_votes(self) -> List[str]:
-        return [f"({'' if s is None else s}) {o} "
+        return [f"({'' if s is None else s}) {o} "  # noqa: IF100
                 + f"({', '.join([u.name for u, w in votes if w])})"
                 for o, votes, s in self.all_votes_with_option_and_score]
 

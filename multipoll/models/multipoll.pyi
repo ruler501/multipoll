@@ -13,7 +13,8 @@ class MultiPoll(PollBase[int]):
     supported_systems: Tuple[str, ...]
     default_system: str
 
-    def create_attachment_for_option(self, ind: int) -> Dict[str, str]: ...
+    def create_attachment_for_option(self, ind: int) -> Dict[str, str]:
+        ...
 
 
 class FullMultiVote(FullVoteBase[int]):
@@ -22,7 +23,8 @@ class FullMultiVote(FullVoteBase[int]):
 
     poll_model: Type[MultiPoll]
 
-    def get_form(self) -> multipoll.forms.FullMultiVoteForm: ...
+    def get_form(self) -> multipoll.forms.FullMultiVoteForm:
+        ...
 
 
 class PartialMultiVote(PartialVoteBase[int]):

@@ -9,7 +9,7 @@ Numeric = TypeVar('Numeric')
 
 
 # noinspection PyPep8Naming
-class approval(electoral_system):
+class approval(electoral_system):  # noqa: N801
     key = "approval"
     label = "Approval"
 

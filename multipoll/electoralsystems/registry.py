@@ -11,7 +11,7 @@ Numeric = TypeVar('Numeric')
 class ElectoralSystemMeta(abc.ABCMeta):
     registered_systems: Dict[str, Type[electoral_system]] = {}
 
-    def __new__(mcs, name: str, bases: Tuple[Type, ...],
+    def __new__(mcs, name: str, bases: Tuple[Type, ...],  # noqa: N804
                 attrs: Dict[str, Any]) -> Type[electoral_system]:
         parents = [b for b in bases if b is abc.ABC]
         new_type = super().__new__(mcs, name, bases, attrs)
@@ -29,7 +29,7 @@ class ElectoralSystemMeta(abc.ABCMeta):
 
 
 # noinspection PyPep8Naming
-class electoral_system(abc.ABC, metaclass=ElectoralSystemMeta):
+class electoral_system(abc.ABC, metaclass=ElectoralSystemMeta):  # noqa: N801
     @classmethod
     def order_options(cls, options: List[str],
                       votes: List[multipoll.models.FullVoteBase[Numeric]]) \

@@ -142,7 +142,8 @@ def slash_poll(request: HttpRequest) -> HttpResponse:
 
 
 # noinspection PyPep8Naming
-def JsonModelResponse(model: models.Model, status_code: int = 200, location: Optional[str] = None,
+def JsonModelResponse(model: models.Model, status_code: int = 200,  # noqa: N802
+                      location: Optional[str] = None,
                       request: Optional[HttpRequest] = None) -> HttpResponse:
     serialized = serializers.serialize('json', [model])
     response = HttpResponse(serialized[1:-1])

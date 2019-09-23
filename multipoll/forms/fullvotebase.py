@@ -17,16 +17,6 @@ FullVoteForm = TypeVar("FullVoteForm", bound='FullVoteFormBase')
 
 
 class FullVoteFormBase(forms.ModelForm, Generic[Numeric]):
-    # noinspection PyMethodParameters
-    @ClassProperty
-    def vote_model(cls) -> Type[FullVoteBase[Numeric]]:
-        return getattr(getattr(cls, "Meta"), "model")
-
-    # noinspection PyMethodParameters
-    @ClassProperty
-    def poll_model(cls) -> Type[PollBase[Numeric]]:
-        return getattr(getattr(cls, "vote_model"), "poll_model")
-
     class Meta:
         vote_model: Type[FullVoteBase]
         abstract = True
@@ -76,12 +66,15 @@ class FullVoteFormBase(forms.ModelForm, Generic[Numeric]):
     def save(self, commit: bool = True) -> None:
         if self.errors:
             # noinspection PyProtectedMember
+            if self.instance._state.adding:
+                added = 'created'
+            else:
+                added = 'changed'
+            # noinspection PyProtectedMember
             # noinspection PyUnresolvedReferences
             raise ValueError(
-                "The %s could not be %s because the data didn't validate." % (
-                    self.instance._meta.object_name,
-                    'created' if self.instance._state.adding else 'changed',
-                )
+                f"The {self.instance._meta.object_name} could not be "
+                + f"{added} because the data didn't validate."
             )
         existing = self.vote_model.find_and_validate_if_exists(self.instance.poll,
                                                                self.instance.user,
@@ -94,7 +87,6 @@ class FullVoteFormBase(forms.ModelForm, Generic[Numeric]):
                 ind = int(field_name[len("option-"):])
                 weights[ind] = self.sanitize_weight(self.data.get(field_name, None))
         self.instance.weights = weights
-        print(weights)
         # noinspection PyUnresolvedReferences
         return super(FullVoteFormBase, self).save(commit)
 
@@ -109,3 +101,13 @@ class FullVoteFormBase(forms.ModelForm, Generic[Numeric]):
     def validate_unique(self) -> None:
         self.vote_model.find_and_validate_if_exists(self.instance.poll, self.instance.user,
                                                     self.instance.user_secret)
+
+    # noinspection PyMethodParameters
+    @ClassProperty
+    def vote_model(cls) -> Type[FullVoteBase[Numeric]]:  # noqa: N805
+        return getattr(getattr(cls, "Meta"), "model")
+
+    # noinspection PyMethodParameters
+    @ClassProperty
+    def poll_model(cls) -> Type[PollBase[Numeric]]:  # noqa: N805
+        return getattr(getattr(cls, "vote_model"), "poll_model")

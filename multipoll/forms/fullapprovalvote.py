@@ -10,11 +10,11 @@ Numeric = TypeVar("Numeric")
 
 
 class FullApprovalVoteForm(FullVoteFormBase):
-    _method = forms.CharField(initial="approvalvote", widget=forms.HiddenInput())
-
     class Meta(FullVoteFormBase.Meta):
         abstract = False
         model = FullApprovalVote
+
+    _method = forms.CharField(initial="approvalvote", widget=forms.HiddenInput())
 
     def sanitize_weight(self, weight: Optional[Numeric]) -> Optional[Numeric]:
         if weight is None or weight in ("off", 0, False, "false", "False", "f", ""):
