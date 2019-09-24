@@ -16,6 +16,8 @@ from django.shortcuts import get_object_or_404
 
 from typedmodels.models import TypedModel
 
+from typing_extensions import Protocol
+
 from multipoll import slack
 from multipoll.models.fields import TimestampField
 from multipoll.models.user import User
@@ -30,6 +32,11 @@ PartialVote = TypeVar('PartialVote', bound='PartialVoteBase')
 logger = logging.getLogger(__name__)
 
 
+class ModelState(Protocol):
+    adding: bool
+    db: str
+
+
 class PollBase(TypedModel):
     class Meta:
         get_latest_by = "timestamp"
@@ -38,6 +45,7 @@ class PollBase(TypedModel):
 
     MAX_OPTIONS: ClassVar[int] = 99
 
+    _state: ModelState
     timestamp = TimestampField(primary_key=True)
     channel: models.CharField[str, str] = models.CharField(max_length=9, null=False)
     question: models.CharField[str, str] = models.CharField(max_length=200, null=False)
@@ -195,6 +203,7 @@ class FullVoteBase(models.Model, metaclass=FullVoteMeta):
         ordering = ('poll', 'user')
         indexes = (models.Index(fields=('poll',)),)
 
+    _state: ModelState
     poll_model: Type[PollBase]
     poll: PollBase
     weights: List
@@ -270,6 +279,7 @@ class PartialVoteBase(models.Model, metaclass=PartialVoteMeta):
     class Meta:
         abstract = True
 
+    _state: ModelState
     poll_model: Type[PollBase]
     poll: PollBase
 

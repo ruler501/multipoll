@@ -8,6 +8,8 @@ from django.db.models.base import ModelBase
 
 from typedmodels.models import TypedModel
 
+from typing_extensions import Protocol
+
 from multipoll.models.fields import TimestampField
 from multipoll.models.user import User
 
@@ -20,12 +22,20 @@ _PartialVote = TypeVar('_PartialVote', bound='PartialVoteBase')
 logger = logging.getLogger(__name__)
 
 
+class ModelState(Protocol):
+    adding: bool
+    db: str
+
+
 class PollBase(TypedModel, Generic[_Numeric]):
     class Meta:
         get_latest_by: str
         ordering: Tuple[str, ...]
         indexes: Tuple[models.Index, ...]
 
+    MAX_OPTIONS: ClassVar[int]
+
+    _state: ModelState
     FullVoteType: Type[FullVoteBase[_Numeric]]
     PartialVoteType: Type[PartialVoteBase[_Numeric]]
     timestamp: TimestampField
@@ -107,8 +117,7 @@ class FullVoteBase(models.Model, Generic[_Numeric], metaclass=FullVoteMeta):
         ordering: Tuple[str, ...]
         indexes: Tuple[models.Index, ...]
 
-    MAX_OPTIONS: ClassVar[int]
-
+    _state: ModelState
     poll_model: Type[PollBase[_Numeric]]
     poll: models.ForeignKey[PollBase[_Numeric], PollBase[_Numeric]]
     weights: List[Optional[_Numeric]]
@@ -146,6 +155,7 @@ class PartialVoteBase(models.Model, Generic[_Numeric], metaclass=PartialVoteMeta
     class Meta:
         abstract: bool
 
+    _state: ModelState
     poll_model: Type[PollBase[_Numeric]]
     poll: PollBase[_Numeric]
     user: models.ForeignKey[User, User]
