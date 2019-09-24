@@ -2,9 +2,9 @@ from __future__ import annotations  # noqa
 
 from typing import List, TypeVar
 
-import multipoll.models
 from multipoll.electoralsystems.ranking import Ranking
 from multipoll.electoralsystems.registry import electoral_system
+from multipoll.models import FullVoteBase
 
 Numeric = TypeVar('Numeric')
 
@@ -15,7 +15,7 @@ class borda(electoral_system):  # noqa: N801
     label = "Borda Count"
 
     @classmethod
-    def generate_scores(cls, votes: List[multipoll.models.FullVoteBase[Numeric]]) -> List[float]:
+    def generate_scores(cls, votes: List[FullVoteBase[Numeric]]) -> List[float]:
         if len(votes) == 0:
             return []
         rankings = [Ranking(vote) for vote in votes]
