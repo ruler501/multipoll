@@ -10,8 +10,8 @@ class MultiPoll(PollBase):
     WeightFieldType: Type['models.SmallIntegerField[int, int]'] = models.SmallIntegerField
     weight_field_args = {'null': True}
 
-    supported_systems = ("approval", "borda")
-    default_system = "borda"
+    supported_systems = ("approval", "borda", "rankedpairs")
+    default_system = "rankedpairs"
 
     def create_attachment_for_option(self, ind: int) -> Dict[str, str]:
         attach = {"name": "numeric_option", "text": self.options[ind], "type": "button",
