@@ -1,6 +1,6 @@
 from __future__ import annotations  # noqa: T484
 
-from typing import Generic, List, Optional, Type, TypeVar, Union
+from typing import Any, Generic, List, Optional, Type, TypeVar, Union
 from typing import cast
 
 from django import forms
@@ -12,13 +12,13 @@ from multipoll.utils import ClassProperty
 
 Numeric = TypeVar('Numeric')
 Poll = TypeVar('Poll', bound=PollBase)
-FullVote = TypeVar('FullVote', bound=FullVoteBase)
+FullVote = TypeVar('FullVote', bound=FullVoteBase, covariant=True)
 FullVoteForm = TypeVar("FullVoteForm", bound='FullVoteFormBase')
 
 
 class FullVoteFormBase(forms.ModelForm, Generic[Numeric]):
-    class Meta:
-        vote_model: Type[FullVoteBase]
+    class Meta(Generic[FullVote]):
+        vote_model: Type[FullVote]
         abstract = True
         fields = ('poll', 'user', 'user_secret')
         widgets = {
@@ -27,25 +27,27 @@ class FullVoteFormBase(forms.ModelForm, Generic[Numeric]):
             'user_secret': forms.HiddenInput()
         }
 
-    def __init__(self, *args, **kwargs):  # noqa: T484
+    instance: FullVoteBase[Numeric]
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         if len(args) > 0:
             kwargs['data'] = args[0]
             args = tuple(args[1:])
         super(FullVoteFormBase, self).__init__(*args, **kwargs)
-        if 'data' in kwargs and 'poll' in kwargs['data']:
-            poll = self.poll_model.timestamped(kwargs['data']['poll'])
-            setattr(self.instance, 'poll', poll)
-            user_name = kwargs['data']['user']
+        if 'data' in kwargs and kwargs['data']:
+            data = kwargs['data']
+            poll = self.poll_model.timestamped(data['poll'])
+            self.instance.poll = poll
+            user_name = data['user']
             user = User.find_or_create(user_name)
-            existing = self.vote_model.find_and_validate_if_exists(poll, user,
-                                                                   kwargs["data"]["user_secret"])
-            if existing:
-                self.instance = existing
+            self.instance = \
+                self.vote_model.find_and_validate_or_create_verified(poll, user,
+                                                                     data["user_secret"])
         if not self.instance.poll:
             raise SuspiciousOperation("Must define poll")
         # noinspection PyUnresolvedReferences
         options = self.instance.poll.options
-        vote_list = self.instance.poll.all_votes
+        vote_list = self.instance.poll.all_votes.values()
         for vote in vote_list:
             if vote.user == self.instance.user:
                 weights = vote.weights
