@@ -108,11 +108,14 @@ class ranked_pairs(electoral_system):  # noqa: N801
                                         for _ in range(options_count)]
         for ranking in rankings:
             for i, w in enumerate(ranking.weights):
-                for j0, w2 in enumerate(ranking.weights[i + 1:]):
-                    if w > w2:
-                        comparisons[i][j0 + i + 1] += 1
-                    elif w2 > w:
-                        comparisons[j0 + i + 1][i] += 1
+                if w is not None:
+                    for j0, w2 in enumerate(ranking.weights[i + 1:]):
+                        if w2 is None:
+                            continue
+                        elif w > w2:
+                            comparisons[i][j0 + i + 1] += 1
+                        elif w2 > w:
+                            comparisons[j0 + i + 1][i] += 1
         majorities = sorted(Majority.populate_majorities(comparisons), reverse=True)
         reachability = Tree[int].calculate_reachability(options_count, majorities)
-        return [1 + sum(1 for t in reachable if t is not None) for reachable in reachability]
+        return [sum(1 for t in reachable if t is not None) for reachable in reachability]
