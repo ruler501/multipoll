@@ -4,6 +4,7 @@ from typing import Any, Generic, List, Optional, Type, TypeVar, Union
 from typing import cast
 
 from django import forms
+from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import SuspiciousOperation
 
 from multipoll.models.pollbase import FullVoteBase, PollBase
@@ -54,16 +55,14 @@ class FullVoteFormBase(forms.ModelForm, Generic[Numeric]):
                 break
         else:
             weights = [None for _ in options]
+        array_field: ArrayField = self.vote_model._meta.get_field('weights')
+        weight_field = array_field.base_field
         for i, wo in enumerate(zip(weights, options)):
             w, o = wo
-            if w is None:
-                self.fields[f"option-{i}"] = getattr(getattr(self.poll_model, "PollMeta"),
-                                                     "weight_field").formfield(required=False,
-                                                                               label=o)
-            else:
-                self.fields[f"option-{i}"] = getattr(getattr(self.poll_model, "PollMeta"),
-                                                     "weight_field").formfield(required=False,
-                                                                               label=o, initial=w)
+            field_kwargs = {"required": False, "label": o}
+            if w is not None:
+                field_kwargs["initial"] = o
+            self.fields[f"option-{i}"] = weight_field.formfield(**field_kwargs)
 
     def save(self, commit: bool = True) -> None:
         if self.errors:
