@@ -3,3 +3,4 @@
 *.sqlite3
 __pycache__
 sloccount.sc
+.mypy_cache
