@@ -7,7 +7,7 @@ from typing import Dict, List, Optional, Union
 
 from django.core import serializers
 from django.db import models
-from django.http import HttpRequest, HttpResponse, HttpResponseBadRequest
+from django.http import HttpRequest, HttpResponse, HttpResponseBadRequest, HttpResponseNotFound
 from django.shortcuts import redirect, render
 from django.views.decorators.csrf import csrf_exempt
 
@@ -236,10 +236,27 @@ def vote_on_poll(request: HttpRequest, poll_timestamp: str) -> HttpResponse:
         return HttpResponseBadRequest()
 
 
-def poll_results(request: HttpRequest, poll_timestamp: str) -> HttpResponse:
+def poll_results(request: HttpRequest, poll_timestamp: str,
+                 system: Optional[str] = None) -> HttpResponse:
     if request.method == "GET":
         poll = PollBase.timestamped(poll_timestamp)
         return render(request, "poll_results.html",
-                      {'poll': poll})
+                      {'poll': poll, 'system': system})
+    else:
+        return HttpResponseBadRequest()
+
+
+def poll_results_visualization(request: HttpRequest, poll_timestamp: str,
+                               system: Optional[str] = None) -> HttpResponse:
+    if request.method == "GET":
+        poll = PollBase.timestamped(poll_timestamp)
+        visualization = poll.visualized_results(system)
+        if visualization is None:
+            return HttpResponseNotFound()
+        else:
+            response = HttpResponse()
+            response.write(visualization)
+            response["Content-Type"] = "image/svg+xml"
+            return response
     else:
         return HttpResponseBadRequest()

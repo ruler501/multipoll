@@ -1,7 +1,7 @@
 from __future__ import annotations  # noqa: T484
 
 import abc
-from typing import Any, Dict, List, Optional, Tuple, Type, TypeVar
+from typing import Any, Dict, List, Optional, Tuple, Type, TypeVar, Union
 
 import multipoll.models
 
@@ -47,6 +47,12 @@ class electoral_system(abc.ABC, metaclass=ElectoralSystemMeta):  # noqa: N801
     @abc.abstractmethod
     def generate_scores(cls, votes: List[multipoll.models.FullVoteBase]) -> List[float]:
         ...
+
+    @classmethod
+    def visualize_results(cls, options: List[str],
+                          votes: List[multipoll.models.FullVoteBase[Numeric]]) \
+            -> Optional[Union[bytes, str]]:
+        return None
 
 
 def get_electoral_system(key: str) -> Type[electoral_system]:
