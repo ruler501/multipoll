@@ -1,5 +1,5 @@
 import logging
-from typing import Any, ClassVar, Dict, Generic, List, Optional, Tuple, Type, TypeVar
+from typing import Any, ClassVar, Dict, Generic, List, Optional, Tuple, Type, TypeVar, Union
 
 from django import forms
 from django.contrib.postgres.fields import ArrayField
@@ -10,11 +10,12 @@ from typedmodels.models import TypedModel
 
 from typing_extensions import Protocol
 
+from multipoll.electoralsystems import electoral_system
 from multipoll.models.fields import TimestampField
 from multipoll.models.user import User
 
 _Numeric = TypeVar('_Numeric')
-_Vote = Tuple[User, Optional[_Numeric]]
+Vote = Tuple[User, Optional[_Numeric]]
 _Poll = TypeVar('_Poll', bound='PollBase')
 _FullVote = TypeVar('_FullVote', bound='FullVoteBase')
 _PartialVote = TypeVar('_PartialVote', bound='PartialVoteBase')
@@ -48,12 +49,6 @@ class PollBase(TypedModel, Generic[_Numeric]):
     def save(self, *args: Any, **kwargs: Any) -> None:
         ...
 
-    def post_poll(self) -> None:
-        ...
-
-    def update_poll(self) -> None:
-        ...
-
     def get_absolute_url(self) -> Optional[str]:
         ...
 
@@ -63,33 +58,54 @@ class PollBase(TypedModel, Generic[_Numeric]):
     def format_attachments(self, include_add_more: bool) -> str:
         ...
 
+    def post_poll(self) -> None:
+        ...
+
+    def update_poll(self) -> None:
+        ...
+
+    def get_formatted_votes(self, system: Optional[str] = ...) -> List[str]:
+        ...
+
+    def visualized_results(self, system: Optional[str] = ...) -> Optional[Union[bytes, str]]:
+        ...
+
     @property
     def timestamp_str(self) -> Optional[str]:
         ...
 
     @property
-    def all_votes(self) -> Dict[User, _FullVote]:
+    def all_votes(self: PollBase[_Numeric]) -> Dict[User, FullVoteBase[_Numeric]]:
         ...
 
     @property
-    def all_votes_with_option_and_score(self) -> List[Tuple[str, List[_Vote], float]]:
+    def all_votes_with_option_and_score(self: PollBase[_Numeric]) \
+            -> List[Tuple[str, List[Vote], float]]:
         ...
 
     @property
-    def formatted_votes(self) -> List[str]:
+    def partial_votes(self: PollBase[_Numeric]) -> Dict[User, FullVoteBase[_Numeric]]:
         ...
 
     @property
-    def partial_votes(self) -> Dict[User, _FullVote]:
-        ...
-
-    @property
-    def full_votes(self) -> Dict[User, _FullVote]:
+    def full_votes(self: PollBase[_Numeric]) -> Dict[User, FullVoteBase[_Numeric]]:
         ...
 
     @classmethod
-    def order_options(cls: Type[_Poll], options: List[str],
-                      votes: Dict[User, _FullVote]) -> List[Tuple[str, List[_Vote], float]]:
+    def get_electoral_system(cls: Type[PollBase[_Numeric]], system: Optional[str] = ...) \
+            -> Type[electoral_system]:
+        ...
+
+    @classmethod
+    def order_options(cls: Type[PollBase[_Numeric]], options: List[str],
+                      votes: Dict[User, FullVoteBase[_Numeric]], system: Optional[str] = ...) \
+            -> List[Tuple[str, List[Vote], float]]:
+        ...
+
+    @classmethod
+    def visualize_options(cls: Type[PollBase[_Numeric]], question: str, options: List[str],
+                          votes: Dict[User, FullVoteBase[_Numeric]], system: Optional[str] = ...) \
+            -> Optional[Union[bytes, str]]:
         ...
 
     @classmethod
@@ -131,17 +147,18 @@ class FullVoteBase(models.Model, Generic[_Numeric], metaclass=FullVoteMeta):
         ...
 
     @property
-    def options(self) -> List[Tuple[str, Optional[_Numeric]]]:
+    def options(self: FullVoteBase[_Numeric]) -> List[Tuple[str, Optional[_Numeric]]]:
         ...
 
     @classmethod
-    def find_and_validate_if_exists(cls, poll: PollBase[_Numeric], user: User,
-                                    user_secret: str) -> Optional[FullVoteBase[_Numeric]]:
+    def find_and_validate_if_exists(cls: Type[FullVoteBase[_Numeric]], poll: PollBase[_Numeric],
+                                    user: User, user_secret: str) \
+            -> Optional[FullVoteBase[_Numeric]]:
         ...
 
     @classmethod
-    def find_and_validate_or_create_verified(cls: Type[_FullVote], poll: _Poll, user_name: str,
-                                             user_secret: str) -> _FullVote:
+    def find_and_validate_or_create_verified(cls: Type[_FullVote], poll: PollBase[_Numeric],
+                                             user_name: str, user_secret: str) -> _FullVote:
         ...
 
 

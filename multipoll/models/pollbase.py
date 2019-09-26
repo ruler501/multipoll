@@ -12,6 +12,7 @@ from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import PermissionDenied
 from django.db import models
 from django.db.models.base import ModelBase
+from django.http import Http404
 from django.shortcuts import get_object_or_404
 
 from typedmodels.models import TypedModel
@@ -102,8 +103,13 @@ class PollBase(TypedModel):
         attachments = self.format_attachments()
         slack.update_message(self.channel, self.timestamp_str, text, attachments)
 
-    def visualized_results(self) -> Optional[Union[bytes, str]]:
-        return self.visualize_options(self.question, self.options, self.all_votes)
+    def get_formatted_votes(self, system: Optional[str] = None) -> List[str]:
+        return [f"({'' if s is None else s}) {o} "  # noqa: IF100
+                + f"({', '.join([f'{u.name}[{w}]' for u, w in votes if w is not None])})"
+                for o, votes, s in self.all_votes_with_option_and_score]
+
+    def visualized_results(self, system: Optional[str] = None) -> Optional[Union[bytes, str]]:
+        return self.visualize_options(self.question, self.options, self.all_votes, system)
 
     @property
     def timestamp_str(self) -> Optional[str]:
@@ -121,12 +127,6 @@ class PollBase(TypedModel):
     @property
     def all_votes_with_option_and_score(self) -> List[Tuple[str, List[Vote], float]]:
         return self.order_options(self.options, self.all_votes)
-
-    @property
-    def formatted_votes(self) -> List[str]:
-        return [f"({'' if s is None else s}) {o} "  # noqa: IF100
-                + f"({', '.join([f'{u.name}[{w}]' for u, w in votes if w is not None])})"
-                for o, votes, s in self.all_votes_with_option_and_score]
 
     @property
     def partial_votes(self) -> Dict[User, FullVote]:
@@ -159,6 +159,8 @@ class PollBase(TypedModel):
         from multipoll.electoralsystems import get_electoral_system
         if system is None:
             system = cls.default_system
+        elif system not in cls.supported_systems:
+            raise Http404("System is not supported")
         return get_electoral_system(system)
 
     @classmethod
