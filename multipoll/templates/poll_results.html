@@ -6,6 +6,8 @@
     {% endfor %}
 </ul>
 
+<img src="/polls/{{ poll.timestamp_str }}/results/visualize" alt="results"/>
+
 <form action="/polls/{{ poll.timestamp_str }}/" method="get" target="_self">
     <input type="submit" value="Go to Poll Overview">
 </form>

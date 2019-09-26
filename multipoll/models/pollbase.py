@@ -4,7 +4,7 @@ import json
 import logging
 import math
 from collections import defaultdict
-from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type, TypeVar
+from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type, TypeVar, Union
 from typing import cast
 
 from django import forms
@@ -102,6 +102,9 @@ class PollBase(TypedModel):
         attachments = self.format_attachments()
         slack.update_message(self.channel, self.timestamp_str, text, attachments)
 
+    def visualized_results(self) -> Optional[Union[bytes, str]]:
+        return self.visualize_options(self.question, self.options, self.all_votes)
+
     @property
     def timestamp_str(self) -> Optional[str]:
         if self.timestamp:
@@ -152,11 +155,25 @@ class PollBase(TypedModel):
         return votes
 
     @classmethod
-    def order_options(cls: Type[Poll], options: List[str],
-                      votes: Dict[User, FullVote]) -> List[Tuple[str, List[Vote], float]]:
+    def get_electoral_system(cls: Type[Poll], system: Optional[str] = None) -> Type:
         from multipoll.electoralsystems import get_electoral_system
-        system = get_electoral_system(cls.default_system)
-        return system.order_options(options, list(votes.values()))
+        if system is None:
+            system = cls.default_system
+        return get_electoral_system(system)
+
+    @classmethod
+    def order_options(cls: Type[Poll], options: List[str],
+                      votes: Dict[User, FullVote], system: Optional[str] = None) \
+            -> List[Tuple[str, List[Vote], float]]:
+        system_cls = cls.get_electoral_system(system)
+        return system_cls.order_options(options, list(votes.values()))
+
+    @classmethod
+    def visualize_options(cls: Type[Poll], question: str, options: List[str],
+                          votes: Dict[User, FullVote], system: Optional[str] = None) \
+            -> Optional[Union[bytes, str]]:
+        system_cls = cls.get_electoral_system(system)
+        return system_cls.visualize_results(question, options, votes)
 
     @classmethod
     def add(cls: Type[Poll], channel: str, question: str, options: List[str]) -> Poll:

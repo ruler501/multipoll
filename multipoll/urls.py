@@ -23,8 +23,10 @@ urlpatterns = [
     url(r'^status', views.server_status, name="status"),
     url(r'^slack/interactive', views.interactive_button, name="interactive_button"),
     url(r'^slack/slash', views.slash_poll, name="poll"),
+    url(r'^polls/(?P<poll_timestamp>\d+(\.\d+)?)/results/visualize',
+        views.poll_results_visualization),
     url(r'^polls/(?P<poll_timestamp>\d+(\.\d+)?)/results', views.poll_results),
     url(r'^polls/(?P<poll_timestamp>\d+(\.\d+)?)/vote', views.vote_on_poll),
     url(r'^polls/(?P<poll_timestamp>\d+(\.\d+)?)/', views.view_poll),
-    url(r'^polls', views.create_poll)
+    url(r'^polls', views.create_poll),
 ]
