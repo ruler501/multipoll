@@ -5,6 +5,7 @@ import logging
 import math
 from collections import defaultdict
 from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type, TypeVar, Union
+from typing import TYPE_CHECKING
 from typing import cast
 
 from django import forms
@@ -23,6 +24,9 @@ from multipoll import slack
 from multipoll.models.fields import TimestampField
 from multipoll.models.user import User
 from multipoll.utils import absolute_url_without_request
+
+if TYPE_CHECKING:
+    import multipoll.electoralsystems
 
 Numeric = TypeVar('Numeric')
 Vote = Tuple[User, Optional[Numeric]]
@@ -155,7 +159,8 @@ class PollBase(TypedModel):
         return votes
 
     @classmethod
-    def get_electoral_system(cls: Type[Poll], system: Optional[str] = None) -> Type:
+    def get_electoral_system(cls: Type[Poll], system: Optional[str] = None) \
+            -> Type[multipoll.electoralsystems.electoral_system]:
         from multipoll.electoralsystems import get_electoral_system
         if system is None:
             system = cls.default_system
@@ -175,7 +180,7 @@ class PollBase(TypedModel):
                           votes: Dict[User, FullVote], system: Optional[str] = None) \
             -> Optional[Union[bytes, str]]:
         system_cls = cls.get_electoral_system(system)
-        return system_cls.visualize_results(question, options, votes)
+        return system_cls.visualize_results(question, options, list(votes.values()))
 
     @classmethod
     def add(cls: Type[Poll], channel: str, question: str, options: List[str]) -> Poll:

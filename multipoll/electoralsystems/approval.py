@@ -1,11 +1,12 @@
 from __future__ import annotations  # noqa: T484
 
-from typing import List, TypeVar
+from typing import List
+from typing import TYPE_CHECKING
 
-import multipoll.models
 from multipoll.electoralsystems.registry import electoral_system
 
-Numeric = TypeVar('Numeric')
+if TYPE_CHECKING:
+    import multipoll.models
 
 
 # noinspection PyPep8Naming
@@ -14,7 +15,7 @@ class approval(electoral_system):  # noqa: N801
     label = "Approval"
 
     @classmethod
-    def generate_scores(cls, votes: List[multipoll.models.FullVoteBase[Numeric]]) -> List[float]:
+    def generate_scores(cls, votes: List[multipoll.models.FullVoteBase]) -> List[float]:
         if len(votes) == 0:
             return []
         scores: List[float] = [0.0 for _ in votes[0].poll.options]

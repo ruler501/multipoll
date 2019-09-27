@@ -5,12 +5,14 @@ import tempfile
 from dataclasses import dataclass, field
 from functools import total_ordering
 from typing import Generic, Iterable, Iterator, List, Optional, Tuple, TypeVar, Union
+from typing import TYPE_CHECKING
 
 from multipoll.electoralsystems.ranking import Ranking
 from multipoll.electoralsystems.registry import electoral_system
-from multipoll.models import FullVoteBase
 
-Numeric = TypeVar('Numeric')
+if TYPE_CHECKING:
+    import multipoll.models
+
 _TCov = TypeVar("_TCov", covariant=True)
 
 
@@ -106,7 +108,7 @@ class ranked_pairs(electoral_system):  # noqa: N801
     label = "Ranked Pairs"
 
     @classmethod
-    def calculate_reachability_and_edges(cls, votes: List[FullVoteBase[Numeric]]) \
+    def calculate_reachability_and_edges(cls, votes: List[multipoll.models.FullVoteBase]) \
             -> Tuple[List[List[Optional[Tree[int]]]], List[Tuple[int, int]]]:
         if len(votes) == 0:
             return ([], [])
@@ -128,7 +130,7 @@ class ranked_pairs(electoral_system):  # noqa: N801
         return Tree[int].calculate_reachability(options_count, majorities)
 
     @classmethod
-    def generate_scores(cls, votes: List[FullVoteBase[Numeric]]) -> List[float]:
+    def generate_scores(cls, votes: List[multipoll.models.FullVoteBase]) -> List[float]:
         if len(votes) == 0:
             return []
         reachability, _ = cls.calculate_reachability_and_edges(votes)
@@ -136,7 +138,7 @@ class ranked_pairs(electoral_system):  # noqa: N801
 
     @classmethod
     def visualize_results(cls, question: str, options: List[str],
-                          votes: List[FullVoteBase[Numeric]]) \
+                          votes: List[multipoll.models.FullVoteBase]) \
             -> Optional[Union[bytes, str]]:
         if len(votes) == 0:
             return None
