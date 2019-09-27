@@ -1,12 +1,13 @@
 from __future__ import annotations  # noqa
 
-from typing import List, TypeVar
+from typing import List
+from typing import TYPE_CHECKING
 
 from multipoll.electoralsystems.ranking import Ranking
 from multipoll.electoralsystems.registry import electoral_system
-from multipoll.models import FullVoteBase
 
-Numeric = TypeVar('Numeric')
+if TYPE_CHECKING:
+    import multipoll.models  # noqa: E402
 
 
 # noinspection PyPep8Naming
@@ -15,7 +16,7 @@ class borda(electoral_system):  # noqa: N801
     label = "Borda Count"
 
     @classmethod
-    def generate_scores(cls, votes: List[FullVoteBase[Numeric]]) -> List[float]:
+    def generate_scores(cls, votes: List[multipoll.models.FullVoteBase]) -> List[float]:
         if len(votes) == 0:
             return []
         rankings = [Ranking(vote) for vote in votes]

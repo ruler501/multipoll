@@ -25,16 +25,16 @@ class User(models.Model):
         return hash(self.name)
 
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, User):
-            return False
-        else:
+        if isinstance(other, User):
             return self.name == other.name
+        else:
+            return False
 
     def __lt__(self, other: object) -> bool:
-        if not isinstance(other, User):
-            return False
-        else:
+        if isinstance(other, User):
             return self.name < other.name
+        else:
+            return False
 
     @staticmethod
     def find_or_create(user: Union[Dict, str]) -> User:

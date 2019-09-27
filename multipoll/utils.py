@@ -1,11 +1,9 @@
 import logging
 import os
-from typing import Callable, Generic, Iterable, List, Optional, Set, Type, TypeVar
-from typing import cast
+from typing import Any, Callable, Generic, Iterable, List, Optional, Set, Type, TypeVar
 
 T = TypeVar('T')
 TContra = TypeVar('TContra', contravariant=True)
-U = TypeVar('U')
 UCov = TypeVar('UCov', covariant=True)
 
 logger = logging.getLogger(__name__)
@@ -38,14 +36,15 @@ def collapse_lists(lists: List[List[str]]) -> List[List[str]]:
 
 
 # TODO: Figure out how to make the type signature work with the default argument
-def unique_iter(seq: Iterable[T], key_function: Optional[Callable[[T], U]]) -> Iterable[T]:
+def unique_iter(seq: Iterable[T], key_function: Optional[Callable[[T], Any]] = None) \
+        -> Iterable[T]:
     """Originally proposed by Andrew Dalke."""
-    seen: Set[U] = set()
+    seen: Set = set()
     for x in seq:
         if key_function:
             y = key_function(x)
         else:
-            y = cast(U, x)
+            y = x
         if y not in seen:
             seen.add(y)
             yield x
@@ -53,7 +52,8 @@ def unique_iter(seq: Iterable[T], key_function: Optional[Callable[[T], U]]) -> I
 
 # Order preserving
 # TODO: Figure out how to make the type signature work with the default argument
-def unique_list(seq: Iterable[T], key_function: Optional[Callable[[T], U]] = None) -> List[T]:
+def unique_list(seq: Iterable[T], key_function: Optional[Callable[[T], Any]] = None) \
+        -> List[T]:
     return list(unique_iter(seq, key_function))
 
 

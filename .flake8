@@ -1,6 +1,6 @@
 [flake8]
 application-import-names = multipoll
-exclude = .venv, multipoll/migrations, .pyenv-System-CPython3.7
+exclude = .venv, multipoll/migrations, .pyenv-System-CPython3.7, .pytype
 import-order-style = ruler501
 max-line-length = 100
 max-complexity = 10

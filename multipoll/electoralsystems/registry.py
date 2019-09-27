@@ -2,8 +2,10 @@ from __future__ import annotations  # noqa: T484
 
 import abc
 from typing import Any, Dict, List, Optional, Tuple, Type, TypeVar, Union
+from typing import TYPE_CHECKING
 
-import multipoll.models
+if TYPE_CHECKING:
+    import multipoll.models
 
 Numeric = TypeVar('Numeric')
 
@@ -33,9 +35,9 @@ class electoral_system(abc.ABC, metaclass=ElectoralSystemMeta):  # noqa: N801
     @classmethod
     def order_options(cls, options: List[str],
                       votes: List[multipoll.models.FullVoteBase[Numeric]]) \
-            -> List[Tuple[str, List[Tuple[multipoll.models.User, Optional[Numeric]]], float]]:
+            -> List[Tuple[str, List[Tuple[multipoll.models.User, Optional[Any]]], float]]:
         scores = cls.generate_scores(votes)
-        collected_votes: List[List[Tuple[multipoll.models.User, Optional[Numeric]]]] = \
+        collected_votes: List[List[Tuple[multipoll.models.User, Optional[Any]]]] = \
             [[] for _ in options]
         for vote in votes:
             for i, w in enumerate(vote.weights):

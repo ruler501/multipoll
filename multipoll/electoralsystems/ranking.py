@@ -1,8 +1,10 @@
 from __future__ import annotations  # noqa: T484
 
 from typing import List, Optional, Tuple, TypeVar
+from typing import TYPE_CHECKING
 
-import multipoll.models
+if TYPE_CHECKING:
+    import multipoll.models
 
 Numeric = TypeVar('Numeric')
 
