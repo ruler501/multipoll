@@ -96,14 +96,14 @@ class PollBase(TypedModel):
 
     def post_poll(self) -> None:
         newline = '\n'
-        text = f"*{self.question}*\n\n{newline.join(self.formatted_votes)}"
+        text = f"*{self.question}*\n\n{newline.join(self.get_formatted_votes())}"
         attachments = self.format_attachments()
         ts = slack.post_message(self.channel, text, attachments)
         self.timestamp = ts
 
     def update_poll(self) -> None:
         newline = '\n'
-        text = f"*{self.question}*\n{self.get_absolute_url()}\n{newline.join(self.formatted_votes)}"
+        text = f"*{self.question}*\n{self.get_absolute_url()}\n{newline.join(self.get_formatted_votes())}"
         attachments = self.format_attachments()
         slack.update_message(self.channel, self.timestamp_str, text, attachments)
 
