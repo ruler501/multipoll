@@ -1,11 +1,12 @@
 from __future__ import annotations  # noqa
 
 import logging
-import subprocess
 from dataclasses import dataclass, field
 from functools import total_ordering
 from typing import Generic, Iterable, Iterator, List, Optional, Tuple, TypeVar, Union
 from typing import TYPE_CHECKING
+
+from django.template.loader import render_to_string
 
 from multipoll.electoralsystems.ranking import Ranking
 from multipoll.electoralsystems.registry import electoral_system
@@ -156,16 +157,19 @@ class ranked_pairs(electoral_system):  # noqa: N801
         if len(votes) == 0:
             return None
         reachability, edges, skipped = cls.calculate_reachability_and_edges(votes)
+        all_edges = sorted([(i, True, source, dest) for i, source, dest in edges]
+                           + [(i, False, source, dest) for i, source, dest in skipped])
         scores = [sum(1 for t in reachable if t is not None) for reachable in reachability]
         result: List[str] = ['digraph {', f'    label="{question}"']
         result += [f'    n{i} [label="({scores[i]}) \\"{option}\\""]'
                    for i, option in enumerate(options)]
-        result += [f'    n{source} -> n{dest} [label="{i}"]' for i, source, dest in edges]
-        result += [f'    n{source} -> n{dest} [label="{i}", constraint=false, '
-                   + "style=dashed, color=grey]"
-                   for i, source, dest in skipped]
-        result += ['}']
-        tmpfilecontents = '\n'.join(result)
-        proc = subprocess.run(['dot', '-T', 'svg'], text=True,
-                              check=True, capture_output=True, input=tmpfilecontents)
-        return proc.stdout
+        graphs: List[str] = ['\n'.join(result + ['}'])]
+        for i, used, source, dest in all_edges:
+            result[-1] = result[-1].replace('#ff0000', '#000000').replace('#aa0000', '#aaaaaa')
+            if used:
+                result.append(f'    n{source} -> n{dest} [label="{i}" color="#ff0000"]')
+            else:
+                result.append(f'    n{source} -> n{dest} [label="{i}", constraint=false, '
+                              + 'style=dashed, color="#aa0000"]')
+            graphs.append('\n'.join(result + ['}']))
+        return render_to_string('visualize_rankedpairs.html', {'graphs': graphs})

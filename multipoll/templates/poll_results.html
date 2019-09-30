@@ -6,8 +6,8 @@
     {% endfor %}
 </ul>
 
-<img src="/polls/{{ poll.timestamp_str }}/results/visualize" alt="results"/>
-
+<!-- <img src="/polls/{{ poll.timestamp_str }}/results/visualize" alt="results"/> -->
+<iframe src="/polls/{{ poll.timestamp_str }}/results/visualize"> </iframe>
 <form action="/polls/{{ poll.timestamp_str }}/" method="get" target="_self">
     <input type="submit" value="Go to Poll Overview">
 </form>

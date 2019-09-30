@@ -256,7 +256,7 @@ def poll_results_visualization(request: HttpRequest, poll_timestamp: str,
         else:
             response = HttpResponse()
             response.write(visualization)
-            response["Content-Type"] = "image/svg+xml"
+            response["Content-Type"] = "text/html"
             return response
     else:
         return HttpResponseBadRequest()
