@@ -2,7 +2,6 @@ from __future__ import annotations  # noqa
 
 import logging
 import subprocess
-import tempfile 
 from dataclasses import dataclass, field
 from functools import total_ordering
 from typing import Generic, Iterable, Iterator, List, Optional, Tuple, TypeVar, Union
@@ -102,7 +101,7 @@ class Tree(Generic[_TCov]):
             reachability[i][i] = Tree[int](i)
         for i, majority in enumerate(majorities):
             if reachability[majority.opposing_option][majority.option] is None:
-                added_edges.append((i + 1, majority.option, majority.opposing_option)) 
+                added_edges.append((i + 1, majority.option, majority.opposing_option))
                 for x in range(options_count):
                     if reachability[x][majority.option] is not None \
                             and reachability[x][majority.opposing_option] is None:
@@ -124,7 +123,7 @@ class ranked_pairs(electoral_system):  # noqa: N801
                      List[Tuple[int, int, int]],
                      List[Tuple[int, int, int]]]:
         if len(votes) == 0:
-            return ([], [])
+            return ([], [], [])
         rankings = [Ranking(vote) for vote in votes]
         options_count = len(rankings[0].indexes)
         comparisons: List[List[int]] = [[0 for _2 in range(options_count)]
@@ -159,9 +158,12 @@ class ranked_pairs(electoral_system):  # noqa: N801
         reachability, edges, skipped = cls.calculate_reachability_and_edges(votes)
         scores = [sum(1 for t in reachable if t is not None) for reachable in reachability]
         result: List[str] = ['digraph {', f'    label="{question}"']
-        result += [f'    n{i} [label="({scores[i]}) \\"{option}\\""]' for i, option in enumerate(options)]
+        result += [f'    n{i} [label="({scores[i]}) \\"{option}\\""]'
+                   for i, option in enumerate(options)]
         result += [f'    n{source} -> n{dest} [label="{i}"]' for i, source, dest in edges]
-        result += [f'    n{source} -> n{dest} [label="{i}", constraint=false, style=dashed, color=grey]' for i, source, dest in skipped]
+        result += [f'    n{source} -> n{dest} [label="{i}", constraint=false, '
+                   + "style=dashed, color=grey]"
+                   for i, source, dest in skipped]
         result += ['}']
         tmpfilecontents = '\n'.join(result)
         proc = subprocess.run(['dot', '-T', 'svg'], text=True,

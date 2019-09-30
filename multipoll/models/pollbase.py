@@ -103,7 +103,8 @@ class PollBase(TypedModel):
 
     def update_poll(self) -> None:
         newline = '\n'
-        text = f"*{self.question}*\n{self.get_absolute_url()}\n{newline.join(self.get_formatted_votes())}"
+        text = f"*{self.question}*\n{self.get_absolute_url()}\n" \
+               + f"{newline.join(self.get_formatted_votes())}"
         attachments = self.format_attachments()
         slack.update_message(self.channel, self.timestamp_str, text, attachments)
 
@@ -199,7 +200,7 @@ class FullVoteMeta(ModelBase):
     def __new__(mcs, name: str, bases: Tuple[Type, ...],  # noqa: N804
                 attrs: Dict[str, Any]) -> Type[FullVoteBase]:
         attrs['name'] = name
-        parents = [b for b in bases if isinstance(b, FullVoteMeta)]
+        parents = [b for b in bases if isinstance(b, FullVoteMeta)]  # noqa: T499
         if parents:
             _meta = attrs['Meta']
             poll_model = attrs["poll_model"]
@@ -257,7 +258,8 @@ class FullVoteBase(models.Model, metaclass=FullVoteMeta):
                 return filtered[0]
             else:
                 raise PermissionDenied()
-        return None
+        else:
+            return None
 
     @classmethod
     def find_and_validate_or_create_verified(cls: Type[FullVote], poll: Poll, user_name: str,
@@ -265,7 +267,7 @@ class FullVoteBase(models.Model, metaclass=FullVoteMeta):
         user = User.find_or_create(user_name)
         existing = cls.find_and_validate_if_exists(poll, user, user_secret)
         if existing:
-            return existing
+            return existing  # noqa: T484
         else:
             vote = cls(poll=poll, user=user, user_secret=user_secret)
             vote.save()
@@ -276,7 +278,7 @@ class PartialVoteMeta(ModelBase):
     def __new__(mcs, name: str, bases: Tuple[Type, ...],  # noqa: N804
                 attrs: Dict[str, Any]) -> Type[PartialVote]:
         attrs['name'] = name
-        parents = [b for b in bases if isinstance(b, PartialVoteMeta)]
+        parents = [b for b in bases if isinstance(b, PartialVoteMeta)]  # noqa: T484
         poll_model: Type[PollBase]
         if parents:
             _meta = attrs['Meta']

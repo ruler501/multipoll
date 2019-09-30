@@ -1,3 +1,5 @@
+from __future__ import annotations  # noqa: T499
+
 from django import forms
 
 from multipoll.forms.fullvotebase import FullVoteFormBase

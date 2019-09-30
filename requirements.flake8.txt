@@ -1,4 +1,3 @@
-django-stubs==1.1.0
 flake8==3.7.8
 flake8-absolute-import==1.0
 flake8-blind-except==0.1.1
@@ -21,5 +20,7 @@ flake8-printf-formatting==1.0.0
 flake8-pyi==19.3.0
 flake8-self==0.2.2
 flake8-use-fstring==1.0
+mypy==0.730
 pep8-naming==0.8.2
 git+https://github.com/ambv/flake8-mypy.git@616eeb9
+git+https://github.com/typeddjango/django-stubs.git@02bdf5b

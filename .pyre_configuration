@@ -1,0 +1,14 @@
+{
+  "source_directories": [
+    "multipoll"
+  ],
+  "exclude": [
+    "multipoll/migrations"
+  ],
+  "ignore_all_errors": [
+    ".venv"
+  ],
+  "search_path": [
+    ".venv/lib/python3.7/site-packages/mypy_django_plugin"
+  ]
+}

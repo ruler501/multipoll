@@ -37,7 +37,7 @@ pipeline {
     stage('Run Flake8') {
       steps {
         withPythonEnv('System-CPython3.7') {
-          sh 'flake8 --format=pylint .'
+          sh 'MYPYPATH="" flake8 --format=pylint .'
         }
       }
     }

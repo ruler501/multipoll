@@ -2,6 +2,7 @@ import datetime
 import logging
 import os
 from typing import Dict, List, Optional, Union
+from typing import cast
 
 from django.core.exceptions import PermissionDenied
 
@@ -67,7 +68,7 @@ def post_message(channel: str, message: str, attachments: Optional[str] = None,
     logger.info('Post Response Body: %s', text_response.content)
     text_response.raise_for_status()
     text_response_dict = text_response.json()
-    return text_response_dict['ts']
+    return cast(str, text_response_dict['ts'])
 
 
 def update_message(channel: str, timestamp: str, text: str, attachments: Optional[str] = None,
