@@ -160,8 +160,8 @@ class ranked_pairs(electoral_system):  # noqa: N801
         all_edges = sorted([(i, True, source, dest) for i, source, dest in edges]
                            + [(i, False, source, dest) for i, source, dest in skipped])
         scores = [sum(1 for t in reachable if t is not None) for reachable in reachability]
-        result: List[str] = ['digraph {', f'    label="{question}"']
-        result += [f'    n{i} [label="({scores[i]}) \\"{option}\\""]'
+        result: List[str] = ['digraph {', f'    label="{question}"', 'scale=0.25']
+        result += [f'    n{i} [label="({scores[i]}) \\\\"{option}\\\\""]'
                    for i, option in enumerate(options)]
         graphs: List[str] = ['\n'.join(result + ['}'])]
         for i, used, source, dest in all_edges:

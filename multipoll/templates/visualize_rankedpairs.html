@@ -1,32 +1,31 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
 <body>
-<script src="//d3js.org/d3.v4.min.js"></script>
-<script src="https://unpkg.com/viz.js@1.8.0/viz.js"></script>
-<script src="https://unpkg.com/d3-graphviz@0.1.2/build/d3-graphviz.js"></script>
-<div id="graph" style="text-align: center;"></div>
+<script src="https://unpkg.com/viz.js@2.1.2/viz.js"></script>
+<script src="https://unpkg.com/viz.js@2.1.2/full.render.js"></script>
+<div id="renderedgraph" style="text-align: center;"></div>
 <script>
-
+var viz = new Viz();
 var dotIndex = 0;
-var graphviz = d3.select("#graph").graphviz()
-    .transition(function () {
-        return d3.transition("main")
-            .ease(d3.easeLinear)
-            .delay(500)
-            .duration(1500);
-    })
-    .logEvents(true)
-    .on("initEnd", render);
 function render() {
     var dot = dots[dotIndex];
-    graphviz
-        .renderDot(dot)
-        .on("end", function () {
-            dotIndex = (dotIndex + 1) % dots.length;
-            render();
-        });
+    dotIndex = (dotIndex + 1) % dots.length;
+    viz.renderSVGElement(dot).then(function(rendered) {
+	rendered.id = "renderedgraph"
+	rendered.width = "100%"
+	rendered.removeAttribute('viewBox');
+	console.log(rendered);
+        var existing = document.getElementById('renderedgraph');
+	console.log(existing);
+        var newEl = existing.parentNode.replaceChild(rendered, existing);
+	console.log(newEl)
+        setTimeout(render, 750);
+    });
 }
 var dots = [
     {% for graph in graphs %}
-    `{{graph}}`,
+    `{{graph|safe}}`,
     {% endfor %}
-]
+];
+render();
 </script>
