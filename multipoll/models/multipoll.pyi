@@ -1,3 +1,6 @@
+from __future__ import annotations  # noqa: T499
+# noqa: T499, E800
+
 from typing import Any, Dict, Tuple, Type
 
 from django.db import models

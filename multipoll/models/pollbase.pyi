@@ -122,7 +122,7 @@ def default_options_inner() -> List[Optional[_Numeric]]:
 
 
 class FullVoteMeta(ModelBase):
-    def __new__(mcs, name: str, bases: Tuple[Type, ...],  # noqa: N804
+    def __new__(mcs, name: str, bases: Tuple[Type, ...],  # noqa: N804, T499
                 attrs: Dict[str, Any]) -> Type[_FullVote]:
         ...
 
@@ -163,7 +163,7 @@ class FullVoteBase(models.Model, Generic[_Numeric], metaclass=FullVoteMeta):
 
 
 class PartialVoteMeta(ModelBase):
-    def __new__(mcs, name: str, bases: Tuple[Type, ...],  # noqa: N804
+    def __new__(mcs, name: str, bases: Tuple[Type, ...],  # noqa: N804, T499
                 attrs: Dict[str, Any]) -> Type[_PartialVote]:
         ...
 

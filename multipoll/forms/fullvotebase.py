@@ -1,4 +1,5 @@
-from __future__ import annotations  # noqa: T484
+from __future__ import annotations  # noqa: T499
+# noqa: T499, E800
 
 from typing import Any, Generic, List, Optional, Type, TypeVar, Union
 from typing import cast

@@ -1,3 +1,6 @@
+from __future__ import annotations  # noqa: T499
+# noqa: T499, E800
+
 from typing import Dict, Type
 
 from django import forms
