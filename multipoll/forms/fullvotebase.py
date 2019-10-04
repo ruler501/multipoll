@@ -1,6 +1,7 @@
 from __future__ import annotations  # noqa: T499
 # noqa: T499, E800
 
+import logging
 from typing import Any, Generic, List, Optional, Type, TypeVar, Union
 from typing import cast
 
@@ -11,6 +12,8 @@ from django.core.exceptions import SuspiciousOperation
 from multipoll.models.pollbase import FullVoteBase, PollBase
 from multipoll.models.user import User
 from multipoll.utils import ClassProperty
+
+logger = logging.getLogger(__name__)
 
 Numeric = TypeVar('Numeric')
 Poll = TypeVar('Poll', bound=PollBase)
@@ -38,32 +41,43 @@ class FullVoteFormBase(forms.ModelForm, Generic[Numeric]):
         super(FullVoteFormBase, self).__init__(*args, **kwargs)
         if 'data' in kwargs and kwargs['data']:
             data = kwargs['data']
+            logger.info(f"FulLVoteFormBase fromPOST: loading poll {data['poll']} as {self.poll_model}")
             poll = self.poll_model.timestamped(data['poll'])
             self.instance.poll = poll
+            logger.info("FullVoteFormBase fromPOST: successfully loaded poll")
             user_name = data['user']
+            logger.info(f"FullVoteFormBase fromPOST: loading user with username: {user_name}")
             user = User.find_or_create(user_name)
+            logger.info(f"FullVoteFormBase fromPOST: finished loading user, creating vote model: {poll}, {user}, {data['user_secret']}")
             self.instance = \
                 self.vote_model.find_and_validate_or_create_verified(poll, user,
                                                                      data["user_secret"])
-        if not self.instance.poll:
+        if not self.instance or not self.instance.poll:
             raise SuspiciousOperation("Must define poll")
         # noinspection PyUnresolvedReferences
         options = self.instance.poll.options
-        vote_list = self.instance.poll.all_votes.values()
-        for vote in vote_list:
-            if vote.user == self.instance.user:
-                weights = vote.weights
-                break
+        weights: List[Optional[Numeric]] = [None for _ in options]
+        if 'data' in kwargs and kwargs['data']:
+            for i in range(len(options)):
+                if f'option-{i}' in data:
+                    weights[i] = int(data[f'option-{i}'])
         else:
-            weights = [None for _ in options]
+            vote_list = self.instance.poll.all_votes.values()
+            for vote in vote_list:
+                if vote.user == self.instance.user:
+                    weights = vote.weights
+                    break
+        logger.info("Found properties")
         array_field: ArrayField = self.vote_model._meta.get_field('weights')
         weight_field = array_field.base_field
         for i, wo in enumerate(zip(weights, options)):
             w, o = wo
             field_kwargs = {"required": False, "label": o}
+            option_str = f'option-{i}'
             if w is not None:
                 field_kwargs["initial"] = o
             self.fields[f"option-{i}"] = weight_field.formfield(**field_kwargs)
+        logger.info("Populated fields")
 
     def save(self, commit: bool = True) -> None:
         if self.errors:

@@ -1,10 +1,13 @@
 from __future__ import annotations  # noqa: T484
 
+import logging
 from functools import total_ordering
 from typing import Dict, Union
 
 from django.db import models
 from django.http import Http404
+
+logger = logging.getLogger(__name__)
 
 
 @total_ordering
@@ -38,6 +41,7 @@ class User(models.Model):
 
     @staticmethod
     def find_or_create(user: Union[Dict, str]) -> User:
+        logger.info(f"Attempting to find or create user from {user} with type {type(user)}")
         if isinstance(user, dict):
             user_name = user['name']
         elif isinstance(user, str):

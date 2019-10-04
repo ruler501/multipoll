@@ -17,7 +17,7 @@ class TimestampField(models.CharField):
     def to_python(self, value: Union[str, datetime.datetime, float]) -> Optional[str]:
         if value == '':
             return None
-        return f'{self.normalize_to_timestamp(value):.6f}'
+        return f'{self.normalize_to_timestamp(value)}'
 
     @classmethod
     def normalize_to_timestamp(cls, value: Union[str, datetime.datetime, float]) -> Optional[str]:

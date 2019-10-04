@@ -12,8 +12,7 @@ class ApprovalPoll(PollBase[bool]):
     supported_systems: Tuple[str, ...]
     default_system: str
 
-    @property
-    def formatted_votes(self) -> List[str]:
+    def get_formatted_votes(self, system: Optional[str] = ...) -> List[str]:
         ...
 
     def create_attachment_for_option(self, ind: int) -> Dict[str, str]:

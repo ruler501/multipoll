@@ -9,16 +9,17 @@ var viz = new Viz();
 var dotIndex = 0;
 function render() {
     var dot = dots[dotIndex];
+    var width = screen.availWidth / 96;
+    var height = screen.availHeight / 96;
+    var viewBox = width + "," + height
+    var dotModded = (' ' + dot).slice(1);
+    dotModded = dotModded.replace("{\n", "{\n    size=\"" + viewBox + "\"\n");
     dotIndex = (dotIndex + 1) % dots.length;
-    viz.renderSVGElement(dot).then(function(rendered) {
-	rendered.id = "renderedgraph"
-	rendered.width = "100%"
-	rendered.removeAttribute('viewBox');
-	console.log(rendered);
+    viz.renderSVGElement(dotModded, {"engine": "dot"}).then(function(rendered) {
+	    rendered.id = "renderedgraph";
+	    rendered.setAttribute("width", "100%");
         var existing = document.getElementById('renderedgraph');
-	console.log(existing);
-        var newEl = existing.parentNode.replaceChild(rendered, existing);
-	console.log(newEl)
+        existing.parentNode.replaceChild(rendered, existing);
         setTimeout(render, 1500);
     });
 }

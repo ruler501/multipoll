@@ -24,6 +24,7 @@ _TCov = TypeVar("_TCov", covariant=True)
 class Majority:
     votes_for: int
     votes_against: int
+    wins: int
     option: int
     opposing_option: int
 
@@ -33,30 +34,37 @@ class Majority:
                      or (self.votes_for == other.votes_for
                          and (self.votes_against > other.votes_against
                               or (self.votes_against == other.votes_against
-                                  and (self.option > other.option
-                                       or (self.option == other.option
-                                           and self.opposing_option > other.opposing_option)))))))
+                                  and (self.wins < other.wins
+                                       or (self.wins == other.wins)
+                                           and (self.option > other.option
+                                               or (self.option == other.option
+                                                   and self.opposing_option > other.opposing_option))))))))
 
     @property
     def margin(self) -> int:
         return self.votes_for - self.votes_against
 
     @classmethod
-    def create(cls, votes_for: int, votes_against: int, option: int,
+    def create(cls, votes_for: int, votes_against: int, wins_for: int, wins_against: int, option: int,
                opposing_option: int) -> Optional[Majority]:
         if votes_for > votes_against:
-            return Majority(votes_for, votes_against, option, opposing_option)
+            return Majority(votes_for, votes_against, wins_for, option, opposing_option)
         elif votes_against > votes_for:
-            return Majority(votes_against, votes_for, opposing_option, option)
+            return Majority(votes_against, votes_for, wins_against, opposing_option, option)
         else:
             return None
 
     @classmethod
     def populate_majorities(cls, comparisons: List[List[int]]) -> Iterable[Majority]:
         options_count = len(comparisons)
+        wins = [0 for _ in range(options_count)]
+        for i in range(options_count):
+            for j in range(options_count):
+                wins[i] += comparisons[i][j]
         for i in range(options_count):
             for j in range(i + 1, options_count):
-                majority = Majority.create(comparisons[i][j], comparisons[j][i], i, j)
+                majority = Majority.create(comparisons[i][j], comparisons[j][i],
+                                           wins[i], wins[j], i, j)
                 if majority is not None:
                     yield majority
 
@@ -159,14 +167,17 @@ class ranked_pairs(electoral_system):  # noqa: N801
         all_edges = sorted([(i, True, majority) for i, majority in edges]
                            + [(i, False, majority) for i, majority in skipped])
         scores = [sum(1 for t in reachable if t is not None) for reachable in reachability]
-        result: List[str] = ['digraph {', f'    label="{question}"', 'scale=0.25']
+        result: List[str] = ['digraph {', f'    label="{question}"', '    pack=false',
+                             '    overlap=false', '    splines=polyline', '    newrank=true',
+                             '    rankdir="TB"', "    truecolor=true", '    ranksep="1 equally"',
+                             '    concentrate=true', '    compress=true']
         result += [f'    n{i} [label="({scores[i]}) \\\\"{option}\\\\""]'
                    for i, option in enumerate(options)]
         graphs: List[str] = ['\n'.join(result + ['}'])]
         for i, used, majority in all_edges:
             source = majority.option
             dest = majority.opposing_option
-            margin_str = f"{majority.votes_for} vs. {majority.votes_against} Net {majority.margin}" 
+            margin_str = f"{majority.votes_for} vs. {majority.votes_against} Borda {majority.wins}" 
             result[-1] = result[-1].replace('#ff0000', '#000000').replace('#ffaaaa', '#aaaaaa')
             if used:
                 result.append(f'    n{source} -> n{dest} [label="({i}) {margin_str}" color="#ff0000"]')

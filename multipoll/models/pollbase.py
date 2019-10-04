@@ -117,6 +117,10 @@ class PollBase(TypedModel):
         return self.visualize_options(self.question, self.options, self.all_votes, system)
 
     @property
+    def formatted_votes(self) -> List[str]:
+        return self.get_formatted_votes()
+
+    @property
     def timestamp_str(self) -> Optional[str]:
         if self.timestamp:
             return TimestampField.normalize_to_timestamp(self.timestamp)
@@ -251,7 +255,7 @@ class FullVoteBase(models.Model, metaclass=FullVoteMeta):
 
     @classmethod
     def find_and_validate_if_exists(cls, poll: PollBase, user: User,
-                                    user_secret: str) -> Optional[FullVote]:
+                                    user_secret: str) -> Optional[FullVoteBase]:
         filtered = cls.objects.filter(poll=poll, user=user)
         if filtered:
             if filtered[0].user_secret == user_secret:
@@ -262,9 +266,8 @@ class FullVoteBase(models.Model, metaclass=FullVoteMeta):
             return None
 
     @classmethod
-    def find_and_validate_or_create_verified(cls: Type[FullVote], poll: Poll, user_name: str,
+    def find_and_validate_or_create_verified(cls: Type[FullVote], poll: Poll, user: User,
                                              user_secret: str) -> FullVote:
-        user = User.find_or_create(user_name)
         existing = cls.find_and_validate_if_exists(poll, user, user_secret)
         if existing:
             return existing  # noqa: T484
