@@ -20,7 +20,11 @@ function render() {
 	    rendered.setAttribute("width", "100%");
         var existing = document.getElementById('renderedgraph');
         existing.parentNode.replaceChild(rendered, existing);
-        setTimeout(render, 1500);
+	var delay = 1500;
+	if (dotIndex == 0) {
+            delay = 15000;
+	}
+        setTimeout(render, delay);
     });
 }
 var dots = [
