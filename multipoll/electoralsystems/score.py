@@ -29,7 +29,7 @@ class AbstractScore(electoral_system, metaclass=abc.ABCMeta):
         return normalize_scores_with_fixed_max_ints(scores, 100)
 
 
-class sumscore(AbstractScore):  # noqa: N801
+class sum_score(AbstractScore):  # noqa: N801
     key = "sumscore"
     label = "Sum of Scores"
 
@@ -38,7 +38,7 @@ class sumscore(AbstractScore):  # noqa: N801
         return sum(scores)
 
 
-class medianscore(AbstractScore):  # noqa: N801
+class median_score(AbstractScore):  # noqa: N801
     key = "medianscore"
     label = "Median of Scores"
 
@@ -47,7 +47,7 @@ class medianscore(AbstractScore):  # noqa: N801
         return statistics.median(scores)
 
 
-class meanscore(AbstractScore):  # noqa: N801
+class mean_score(AbstractScore):  # noqa: N801
     key = "meanscore"
     label = "Average(Mean) of Scores"
 
