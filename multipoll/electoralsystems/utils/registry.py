@@ -28,7 +28,6 @@ class ElectoralSystemMeta(abc.ABCMeta):
         return new_type
 
 
-# noinspection PyPep8Naming
 class electoral_system(abc.ABC, metaclass=ElectoralSystemMeta):  # noqa: N801
     @classmethod
     def order_options(cls, options: List[str],

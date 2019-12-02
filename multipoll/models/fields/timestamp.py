@@ -42,7 +42,6 @@ class TimestampField(models.CharField):
                 dt = datetime.datetime.strptime(str(value), dt_format)
         return dt
 
-    # noinspection PyUnusedLocal
     def from_db_value(self, value: Union[datetime.datetime, str, float],
                       *_: Any) -> Optional[datetime.datetime]:
         return self.normalize_to_datetime(value)

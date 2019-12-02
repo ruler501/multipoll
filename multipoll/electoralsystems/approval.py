@@ -9,7 +9,6 @@ if TYPE_CHECKING:
     import multipoll.models
 
 
-# noinspection PyPep8Naming
 class approval(electoral_system):  # noqa: N801
     key = "approval"
     label = "Approval"

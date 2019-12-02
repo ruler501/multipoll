@@ -142,7 +142,6 @@ def slash_poll(request: HttpRequest) -> HttpResponse:
     return HttpResponse()  # Empty 200 HTTP response, to not display any additional content in Slack
 
 
-# noinspection PyPep8Naming
 def JsonModelResponse(model: models.Model, status_code: int = 200,  # noqa: N802
                       location: Optional[str] = None,
                       request: Optional[HttpRequest] = None) -> HttpResponse:

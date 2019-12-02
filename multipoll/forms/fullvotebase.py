@@ -80,13 +80,10 @@ class FullVoteFormBase(forms.ModelForm):
 
     def save(self, commit: bool = True) -> None:
         if self.errors:
-            # noinspection PyProtectedMember
             if self.instance._state.adding:
                 added = 'created'
             else:
                 added = 'changed'
-            # noinspection PyProtectedMember
-            # noinspection PyUnresolvedReferences
             raise ValueError(
                 f"The {self.instance._meta.object_name} could not be "
                 + f"{added} because the data didn't validate."
@@ -102,27 +99,22 @@ class FullVoteFormBase(forms.ModelForm):
                 ind = int(field_name[len("option-"):])
                 weights[ind] = self.sanitize_weight(self.data.get(field_name, None))
         self.instance.weights = weights
-        # noinspection PyUnresolvedReferences
         return super(FullVoteFormBase, self).save(commit)
 
-    # noinspection PyMethodMayBeStatic
     def sanitize_weight(self, weight: Optional[Union[str, int]]) -> Optional[int]:
         if weight == "":
             return None
         else:
             return cast(int, weight)
 
-    # noinspection PyMethodMayBeStatic
     def validate_unique(self) -> None:
         self.vote_model.find_and_validate_if_exists(self.instance.poll, self.instance.user,
                                                     self.instance.user_secret)
 
-    # noinspection PyMethodParameters
     @ClassProperty
     def vote_model(cls) -> Type[FullVoteBase]:  # noqa: N805
         return getattr(getattr(cls, "Meta"), "model")
 
-    # noinspection PyMethodParameters
     @ClassProperty
     def poll_model(cls) -> Type[PollBase]:  # noqa: N805
         return getattr(getattr(cls, "vote_model"), "poll_model")

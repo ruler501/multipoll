@@ -70,7 +70,6 @@ class Tree(Generic[_TCov]):
         return reachability, added_edges, skipped_edges
 
 
-# noinspection PyPep8Naming
 class ranked_pairs(electoral_system):  # noqa: N801
     key = "rankedpairs"
     label = "Ranked Pairs"
