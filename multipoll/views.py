@@ -3,7 +3,7 @@ import inspect
 import json
 import logging
 import os
-from typing import Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Union
 
 from django.core import serializers
 from django.core.exceptions import SuspiciousOperation
@@ -263,7 +263,32 @@ def vote_on_poll(request: HttpRequest, poll_timestamp: str) -> HttpResponse:
         return HttpResponseBadRequest()
 
 
-def poll_results(request: HttpRequest, poll_timestamp: str,
+LIST_SUFFIX = '_list'
+RequestHandler = Callable[..., HttpResponse]
+
+
+def query_dict_to_kwonlyargs(handler: RequestHandler) \
+        -> RequestHandler:
+    _, _, varkw, _, kwonlyargs, _, _ = inspect.getfullargspec(handler)
+
+    def wrapped(request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
+        query_dict = request.GET or request.POST
+        if query_dict is not None:
+            kwnames = kwonlyargs
+            if varkw is not None:
+                kwnames += request.GET.keys()
+            for kwname in kwnames:
+                if kwname in query_dict:
+                    if kwname.endswith(LIST_SUFFIX):
+                        kwargs[kwname] = query_dict.getlist(kwname[:-len(LIST_SUFFIX)])
+                    else:
+                        kwargs[kwname] = query_dict.get(kwname)
+        return handler(request, *args, **kwargs)
+    return wrapped
+
+
+@query_dict_to_kwonlyargs
+def poll_results(request: HttpRequest, poll_timestamp: str, *,
                  system: Optional[str] = None) -> HttpResponse:
     if request.method == "GET":
         poll = PollBase.timestamped(poll_timestamp)
@@ -273,7 +298,8 @@ def poll_results(request: HttpRequest, poll_timestamp: str,
         return HttpResponseBadRequest()
 
 
-def poll_results_visualization(request: HttpRequest, poll_timestamp: str,
+@query_dict_to_kwonlyargs
+def poll_results_visualization(request: HttpRequest, poll_timestamp: str, *,
                                system: Optional[str] = None) -> HttpResponse:
     if request.method == "GET":
         poll = PollBase.timestamped(poll_timestamp)
