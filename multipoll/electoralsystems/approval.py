@@ -3,7 +3,7 @@ from __future__ import annotations  # noqa: T484
 from typing import List
 from typing import TYPE_CHECKING
 
-from multipoll.electoralsystems.registry import electoral_system
+from multipoll.electoralsystems.utils import electoral_system
 
 if TYPE_CHECKING:
     import multipoll.models

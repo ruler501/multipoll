@@ -2,14 +2,13 @@ from __future__ import annotations  # noqa
 
 import logging
 from dataclasses import dataclass, field
-from functools import total_ordering
-from typing import Generic, Iterable, Iterator, List, Optional, Tuple, TypeVar, Union
+from typing import Generic, Iterator, List, Optional, Tuple, TypeVar, Union
 from typing import TYPE_CHECKING
 
 from django.template.loader import render_to_string
 
-from multipoll.electoralsystems.ranking import Ranking
-from multipoll.electoralsystems.registry import electoral_system
+from multipoll.electoralsystems.utils import electoral_system
+from multipoll.electoralsystems.utils.ranking import Majority, Ranking
 
 if TYPE_CHECKING:
     import multipoll.models
@@ -17,57 +16,6 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 _TCov = TypeVar("_TCov", covariant=True)
-
-
-@total_ordering
-@dataclass(order=False, frozen=False)
-class Majority:
-    votes_for: int
-    votes_against: int
-    wins: int
-    option: int
-    opposing_option: int
-
-    def __lt__(self, other: object) -> bool:
-        return (isinstance(other, self.__class__)
-                and (self.votes_for < other.votes_for
-                     or (self.votes_for == other.votes_for
-                         and (self.votes_against > other.votes_against
-                              or (self.votes_against == other.votes_against
-                                  and (self.wins < other.wins
-                                       or (self.wins == other.wins
-                                           and (self.option > other.option
-                                                or (self.option == other.option
-                                                    and self.opposing_option
-                                                    > other.opposing_option)))))))))
-
-    @property
-    def margin(self) -> int:
-        return self.votes_for - self.votes_against
-
-    @classmethod
-    def create(cls, votes_for: int, votes_against: int, wins_for: int, wins_against: int,
-               option: int, opposing_option: int) -> Optional[Majority]:
-        if votes_for > votes_against:
-            return Majority(votes_for, votes_against, wins_for, option, opposing_option)
-        elif votes_against > votes_for:
-            return Majority(votes_against, votes_for, wins_against, opposing_option, option)
-        else:
-            return None
-
-    @classmethod
-    def populate_majorities(cls, comparisons: List[List[int]]) -> Iterable[Majority]:
-        options_count = len(comparisons)
-        wins = [0 for _ in range(options_count)]
-        for i in range(options_count):
-            for j in range(options_count):
-                wins[i] += comparisons[i][j]
-        for i in range(options_count):
-            for j in range(i + 1, options_count):
-                majority = Majority.create(comparisons[i][j], comparisons[j][i],
-                                           wins[i], wins[j], i, j)
-                if majority is not None:
-                    yield majority
 
 
 @dataclass
