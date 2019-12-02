@@ -39,7 +39,7 @@ class electoral_system(abc.ABC, metaclass=ElectoralSystemMeta):  # noqa: N801
             [[] for _ in options]
         for vote in votes:
             for i, w in enumerate(vote.weights):
-                if w:
+                if w is not None:
                     collected_votes[i].append((vote.user, w))
         return sorted(zip(options, collected_votes, scores), key=lambda o: o[2], reverse=True)
 
