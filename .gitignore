@@ -4,3 +4,4 @@
 __pycache__
 sloccount.sc
 .mypy_cache
+.DS_Store
