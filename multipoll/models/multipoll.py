@@ -13,7 +13,8 @@ class MultiPoll(PollBase):
     WeightFieldType: ClassVar[Type['models.SmallIntegerField[int, int]']] = models.SmallIntegerField
     weight_field_args: ClassVar[Dict] = {'null': True}
 
-    supported_systems: ClassVar[Tuple[str, ...]] = ("approval", "borda", "rankedpairs", "score")
+    supported_systems: ClassVar[Tuple[str, ...]] = ("approval", "borda", "rankedpairs", "sumscore",
+                                                    "medianscore", "meanscore")
     default_system: ClassVar[str] = "rankedpairs"
 
     def create_attachment_for_option(self, ind: int) -> Dict[str, str]:
