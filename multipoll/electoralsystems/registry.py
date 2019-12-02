@@ -1,13 +1,11 @@
 from __future__ import annotations  # noqa: T484
 
 import abc
-from typing import Any, Dict, List, Optional, Tuple, Type, TypeVar, Union
+from typing import Any, Dict, List, Optional, Tuple, Type, Union
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     import multipoll.models
-
-Numeric = TypeVar('Numeric')
 
 
 class ElectoralSystemMeta(abc.ABCMeta):
@@ -34,7 +32,7 @@ class ElectoralSystemMeta(abc.ABCMeta):
 class electoral_system(abc.ABC, metaclass=ElectoralSystemMeta):  # noqa: N801
     @classmethod
     def order_options(cls, options: List[str],
-                      votes: List[multipoll.models.FullVoteBase[Numeric]]) \
+                      votes: List[multipoll.models.FullVoteBase]) \
             -> List[Tuple[str, List[Tuple[multipoll.models.User, Optional[Any]]], float]]:
         scores = cls.generate_scores(votes)
         collected_votes: List[List[Tuple[multipoll.models.User, Optional[Any]]]] = \
@@ -52,7 +50,7 @@ class electoral_system(abc.ABC, metaclass=ElectoralSystemMeta):  # noqa: N801
 
     @classmethod
     def visualize_results(cls, options: List[str],
-                          votes: List[multipoll.models.FullVoteBase[Numeric]]) \
+                          votes: List[multipoll.models.FullVoteBase]) \
             -> Optional[Union[bytes, str]]:
         return None
 

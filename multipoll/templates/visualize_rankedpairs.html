@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<body>
+<script src="https://unpkg.com/viz.js@2.1.2/viz.js"></script>
+<script src="https://unpkg.com/viz.js@2.1.2/full.render.js"></script>
+<div id="renderedgraph" style="text-align: center;"></div>
+<script>
+var viz = new Viz();
+var dotIndex = 0;
+function render() {
+    var dot = dots[dotIndex];
+    var width = screen.availWidth / 96;
+    var height = screen.availHeight / 96;
+    var viewBox = width + "," + height
+    var dotModded = (' ' + dot).slice(1);
+    dotModded = dotModded.replace("{\n", "{\n    size=\"" + viewBox + "\"\n");
+    dotIndex = (dotIndex + 1) % dots.length;
+    viz.renderSVGElement(dotModded, {"engine": "dot"}).then(function(rendered) {
+	    rendered.id = "renderedgraph";
+	    rendered.setAttribute("width", "100%");
+        var existing = document.getElementById('renderedgraph');
+        existing.parentNode.replaceChild(rendered, existing);
+	var delay = 1500;
+	if (dotIndex == 0) {
+            delay = 15000;
+	}
+        setTimeout(render, delay);
+    });
+}
+var dots = [
+    {% for graph in graphs %}
+    `{{graph|safe}}`,
+    {% endfor %}
+];
+render();
+</script>

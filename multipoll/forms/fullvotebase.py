@@ -1,6 +1,7 @@
 from __future__ import annotations  # noqa: T499
 # noqa: T499, E800
 
+import logging
 from typing import Any, Generic, List, Optional, Type, TypeVar, Union
 from typing import cast
 
@@ -12,13 +13,15 @@ from multipoll.models.pollbase import FullVoteBase, PollBase
 from multipoll.models.user import User
 from multipoll.utils import ClassProperty
 
-Numeric = TypeVar('Numeric')
+logger = logging.getLogger(__name__)
+
+
 Poll = TypeVar('Poll', bound=PollBase)
 FullVote = TypeVar('FullVote', bound=FullVoteBase, covariant=True)
 FullVoteForm = TypeVar("FullVoteForm", bound='FullVoteFormBase')
 
 
-class FullVoteFormBase(forms.ModelForm, Generic[Numeric]):
+class FullVoteFormBase(forms.ModelForm):
     class Meta(Generic[FullVote]):
         vote_model: Type[FullVote]
         abstract = True
@@ -29,7 +32,7 @@ class FullVoteFormBase(forms.ModelForm, Generic[Numeric]):
             'user_secret': forms.HiddenInput()
         }
 
-    instance: FullVoteBase[Numeric]
+    instance: FullVoteBase
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         if len(args) > 0:
@@ -38,24 +41,33 @@ class FullVoteFormBase(forms.ModelForm, Generic[Numeric]):
         super(FullVoteFormBase, self).__init__(*args, **kwargs)
         if 'data' in kwargs and kwargs['data']:
             data = kwargs['data']
+            logger.info(f"FulLVoteFormBase fromPOST: loading poll {data['poll']} as "
+                        + f"{self.poll_model}")
             poll = self.poll_model.timestamped(data['poll'])
             self.instance.poll = poll
+            logger.info("FullVoteFormBase fromPOST: successfully loaded poll")
             user_name = data['user']
+            logger.info(f"FullVoteFormBase fromPOST: loading user with username: {user_name}")
             user = User.find_or_create(user_name)
+            logger.info(f"FullVoteFormBase fromPOST: finished loading user, creating vote model: "
+                        + f"{poll}, {user}, {data['user_secret']}")
             self.instance = \
                 self.vote_model.find_and_validate_or_create_verified(poll, user,
                                                                      data["user_secret"])
-        if not self.instance.poll:
-            raise SuspiciousOperation("Must define poll")
-        # noinspection PyUnresolvedReferences
-        options = self.instance.poll.options
-        vote_list = self.instance.poll.all_votes.values()
-        for vote in vote_list:
-            if vote.user == self.instance.user:
-                weights = vote.weights
-                break
+            if not self.instance or not self.instance.poll:
+                raise SuspiciousOperation("Must define poll")
+            options = self.instance.poll.options
+            weights: List[Optional[int]] = [None for _ in options]
+            for i in range(len(options)):
+                if f'option-{i}' in data:
+                    weights[i] = int(data[f'option-{i}'])
         else:
-            weights = [None for _ in options]
+            vote_list = self.instance.poll.all_votes.values()
+            for vote in vote_list:
+                if vote.user == self.instance.user:
+                    weights = vote.weights
+                    break
+        logger.info("Found properties")
         array_field: ArrayField = self.vote_model._meta.get_field('weights')
         weight_field = array_field.base_field
         for i, wo in enumerate(zip(weights, options)):
@@ -64,6 +76,7 @@ class FullVoteFormBase(forms.ModelForm, Generic[Numeric]):
             if w is not None:
                 field_kwargs["initial"] = o
             self.fields[f"option-{i}"] = weight_field.formfield(**field_kwargs)
+        logger.info("Populated fields")
 
     def save(self, commit: bool = True) -> None:
         if self.errors:
@@ -83,7 +96,7 @@ class FullVoteFormBase(forms.ModelForm, Generic[Numeric]):
                                                                self.instance.user_secret)
         if existing:
             self.instance = existing
-        weights: List[Optional[Numeric]] = [None for _ in range(self.poll_model.MAX_OPTIONS)]
+        weights: List[Optional[int]] = [None for _ in range(self.poll_model.MAX_OPTIONS)]
         for field_name in self.fields:
             if field_name.startswith("option"):
                 ind = int(field_name[len("option-"):])
@@ -93,11 +106,11 @@ class FullVoteFormBase(forms.ModelForm, Generic[Numeric]):
         return super(FullVoteFormBase, self).save(commit)
 
     # noinspection PyMethodMayBeStatic
-    def sanitize_weight(self, weight: Optional[Union[str, Numeric]]) -> Optional[Numeric]:
+    def sanitize_weight(self, weight: Optional[Union[str, int]]) -> Optional[int]:
         if weight == "":
             return None
         else:
-            return cast(Numeric, weight)
+            return cast(int, weight)
 
     # noinspection PyMethodMayBeStatic
     def validate_unique(self) -> None:
@@ -106,10 +119,10 @@ class FullVoteFormBase(forms.ModelForm, Generic[Numeric]):
 
     # noinspection PyMethodParameters
     @ClassProperty
-    def vote_model(cls) -> Type[FullVoteBase[Numeric]]:  # noqa: N805
+    def vote_model(cls) -> Type[FullVoteBase]:  # noqa: N805
         return getattr(getattr(cls, "Meta"), "model")
 
     # noinspection PyMethodParameters
     @ClassProperty
-    def poll_model(cls) -> Type[PollBase[Numeric]]:  # noqa: N805
+    def poll_model(cls) -> Type[PollBase]:  # noqa: N805
         return getattr(getattr(cls, "vote_model"), "poll_model")

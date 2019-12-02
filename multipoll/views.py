@@ -6,6 +6,7 @@ import os
 from typing import Dict, List, Optional, Union
 
 from django.core import serializers
+from django.core.exceptions import SuspiciousOperation
 from django.db import models
 from django.http import HttpRequest, HttpResponse, HttpResponseBadRequest, HttpResponseNotFound
 from django.shortcuts import redirect, render
@@ -59,7 +60,7 @@ def interactive_button(request: HttpRequest) -> HttpResponse:
         poll.options.append(payload['submission']['new_option'])
         poll.options = utils.unique_list(poll.options)
         poll.save()
-    elif payload['callback_id'] == 'numeric_vote':
+    elif payload['callback_id'] == 'int_vote':
         ts, ind_str = payload['state'].split(divider)
         poll = PollBase.timestamped(ts)
         user = User.find_or_create("@" + payload['user']["name"])
@@ -85,7 +86,7 @@ def interactive_button(request: HttpRequest) -> HttpResponse:
                 vote.weight = False
             vote.weight = not vote.weight
             vote.save()
-        elif event['name'] == "numeric_option":
+        elif event['name'] == "int_option":
             poll = PollBase.timestamped(payload['original_message']['ts'])
             ind = int(event['value'])
             option = poll.options[ind]
@@ -101,7 +102,7 @@ def interactive_button(request: HttpRequest) -> HttpResponse:
             existing = poll.PartialVoteType.objects.filter(poll=poll, user=user, option=ind)
             if existing:
                 elements[0]["value"] = existing[0].weight
-            slack.create_dialog(payload['trigger_id'], "Respond to Poll:", state, 'numeric_vote',
+            slack.create_dialog(payload['trigger_id'], "Respond to Poll:", state, 'int_vote',
                                 elements)
     return HttpResponse()
 
@@ -188,48 +189,75 @@ def view_poll(request: HttpRequest, poll_timestamp: str) -> HttpResponse:
         return HttpResponseBadRequest()
 
 
-def vote_on_poll(request: HttpRequest, poll_timestamp: str) -> HttpResponse:
-    if request.method == "GET":
-        submitted_form = NameAndSecretForm(request.GET)
-        if submitted_form.is_valid():
-            poll = PollBase.timestamped(poll_timestamp)
-            user_name = submitted_form.cleaned_data['user_name']
-            user_secret = submitted_form.cleaned_data['user_secret']
-            vote = poll.FullVoteType.find_and_validate_or_create_verified(poll, user_name,
-                                                                          user_secret)
-            form = vote.get_form()
-            return render(request, "vote_on_poll.html",
-                          {'form': form, 'path': request.get_full_path(force_append_slash=True)})
-        else:
-            return HttpResponseBadRequest()
-    elif request.method == 'POST':
+def view_vote_on_poll_form(request: HttpRequest, poll_timestamp: str) -> HttpResponse:
+    logger.info("vote_on_poll: Received a GET request")
+    submitted_form = NameAndSecretForm(request.GET)
+    if submitted_form.is_valid():
         poll = PollBase.timestamped(poll_timestamp)
-        if request.POST['_method'] == "addvote":
-            option = request.POST['option']
-            if option in poll.options:
-                return HttpResponseBadRequest()
-            else:
-                poll.options.append(option)
-                poll.save()
-                return redirect(request.POST['next'])
+        user_name = submitted_form.cleaned_data['user_name']
+        user_secret = submitted_form.cleaned_data['user_secret']
+        user = User.find_or_create(user_name)
+        vote = poll.FullVoteType.find_and_validate_or_create_verified(poll, user,
+                                                                      user_secret)
+        form = vote.get_form()
+        return render(request, "vote_on_poll.html",
+                      {'form': form, 'path': request.get_full_path(force_append_slash=True)})
+    else:
+        return HttpResponseBadRequest()
+
+
+def add_poll_option(request: HttpRequest, poll_timestamp: str) -> HttpResponse:
+    logger.info("vote_on_poll: method is 'addoption'")
+    poll = PollBase.timestamped(poll_timestamp)
+    option = request.POST['option']
+    if option is None:
+        return HttpResponseBadRequest()
+    else:
+        option = option.strip()
+        if option in poll.options or len(option) == 0:
+            return HttpResponseBadRequest()
+        else:
+            poll.options.append(option)
+            poll.save()
+            return redirect(request.POST['next'])
+
+
+def submit_vote_on_poll(request: HttpRequest, poll_timestamp: str) -> HttpResponse:
+    logger.info("vote_on_poll: method is *vote")
+    if request.POST['_method'] == 'approvalvote':
+        cls = FullApprovalVoteForm
+    elif request.POST['_method'] == 'multivote':
+        cls = FullMultiVoteForm
+    else:
+        return HttpResponseBadRequest()
+    submitted_form = cls(request.POST)
+    if submitted_form.is_valid():
+        logger.info("vote_on_poll: submitted_form is_valid")
+        if submitted_form.cleaned_data['poll'].timestamp_str == poll_timestamp:
+            logger.info("vote_on_poll: submitted_form has correct timestamp")
+            poll = submitted_form.cleaned_data['poll']
+            submitted_form.save()
+            logger.info("vote_on_poll: submitted_form saved")
+            return redirect(poll.get_absolute_url() + "/results")
+        else:
+            raise SuspiciousOperation("Poll timestamp did not match what was submitted"
+                                      + "in the form.")
+    else:
+        logger.warning(f"Failed to clean submitted form: {submitted_form.cleaned_data} "
+                       + f"had errors {submitted_form.errors}")
+        return HttpResponseBadRequest()
+
+
+def vote_on_poll(request: HttpRequest, poll_timestamp: str) -> HttpResponse:
+    logger.info(f"In view controller vote_on_poll(<Request>, '{poll_timestamp}')")
+    if request.method == "GET":
+        return view_vote_on_poll_form(request, poll_timestamp)
+    elif request.method == 'POST':
+        logger.info("vote_on_poll: Received a POST request")
+        if request.POST['_method'] == "addoption":
+            return add_poll_option(request, poll_timestamp)
         elif request.POST['_method'].endswith('vote'):
-            if request.POST['_method'] == 'approvalvote':
-                cls = FullApprovalVoteForm
-            elif request.POST['_method'] == 'multivote':
-                cls = FullMultiVoteForm
-            else:
-                return HttpResponseBadRequest()
-            submitted_form = cls(request.POST)
-            if submitted_form.is_valid() \
-                    and submitted_form.cleaned_data['poll'].timestamp_str == poll_timestamp:
-                poll = submitted_form.cleaned_data['poll']
-                submitted_form.save()
-                return redirect(poll.get_absolute_url() + "/results")
-            else:
-                logger.warning(f"Failed to clean submitted form: {submitted_form.cleaned_data} "
-                               + f"had errors {submitted_form.errors} and "
-                               + f"timestamp {submitted_form.cleaned_data['poll'].timestamp_str}")
-                return HttpResponseBadRequest()
+            return submit_vote_on_poll(request, poll_timestamp)
         else:
             return HttpResponseBadRequest()
     else:
@@ -256,7 +284,7 @@ def poll_results_visualization(request: HttpRequest, poll_timestamp: str,
         else:
             response = HttpResponse()
             response.write(visualization)
-            response["Content-Type"] = "image/svg+xml"
+            response["Content-Type"] = "text/html"
             return response
     else:
         return HttpResponseBadRequest()

@@ -71,6 +71,10 @@ class PollBase(TypedModel, Generic[_Numeric]):
         ...
 
     @property
+    def formatted_votes(self) -> List[str]:
+        ...
+
+    @property
     def timestamp_str(self) -> Optional[str]:
         ...
 
@@ -158,7 +162,7 @@ class FullVoteBase(models.Model, Generic[_Numeric], metaclass=FullVoteMeta):
 
     @classmethod
     def find_and_validate_or_create_verified(cls: Type[_FullVote], poll: PollBase[_Numeric],
-                                             user_name: str, user_secret: str) -> _FullVote:
+                                             user: User, user_secret: str) -> _FullVote:
         ...
 
 

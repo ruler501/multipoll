@@ -17,7 +17,7 @@ class MultiPoll(PollBase):
     default_system = "rankedpairs"
 
     def create_attachment_for_option(self, ind: int) -> Dict[str, str]:
-        attach = {"name": "numeric_option", "text": self.options[ind], "type": "button",
+        attach = {"name": "int_option", "text": self.options[ind], "type": "button",
                   "value": str(ind)}
         return attach
 

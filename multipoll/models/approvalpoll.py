@@ -17,8 +17,7 @@ class ApprovalPoll(PollBase):
     supported_systems = ("approval",)
     default_system = "approval"
 
-    @property
-    def formatted_votes(self) -> List[str]:
+    def get_formatted_votes(self, system: Optional[str] = None) -> List[str]:
         return [f"({'' if s is None else s}) {o} "  # noqa: IF100
                 + f"({', '.join([u.name for u, w in votes if w])})"
                 for o, votes, s in self.all_votes_with_option_and_score]

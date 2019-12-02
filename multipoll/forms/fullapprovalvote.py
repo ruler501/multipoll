@@ -6,7 +6,7 @@ from multipoll.forms.fullvotebase import FullVoteFormBase
 from multipoll.models import FullApprovalVote
 
 
-class FullApprovalVoteForm(FullVoteFormBase[bool]):
+class FullApprovalVoteForm(FullVoteFormBase):
     class Meta(FullVoteFormBase.Meta):
         abstract = False
         model = FullApprovalVote

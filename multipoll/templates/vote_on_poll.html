@@ -7,7 +7,7 @@
 </form>
 
 <form action="/polls/{{ form.instance.poll.timestamp_str }}/vote" method="post">
-    <input type="hidden" name="_method" value="addvote">
+    <input type="hidden" name="_method" value="addoption">
     <input type="hidden" name="next" value="{{ path }}">
     <p>
         <label for="id_new_option">New Option:</label>

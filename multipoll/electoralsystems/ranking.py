@@ -1,21 +1,19 @@
 from __future__ import annotations  # noqa: T484
 
-from typing import List, Optional, Tuple, TypeVar
+from typing import List, Optional, Tuple
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     import multipoll.models
-
-Numeric = TypeVar('Numeric')
 
 
 class Ranking:
     weights: List[Optional[float]]
     indexes: List[int]
 
-    def __init__(self, vote: multipoll.models.FullVoteBase[Numeric], collapse_ties: bool = True):
+    def __init__(self, vote: multipoll.models.FullVoteBase, collapse_ties: bool = True):
         options_count = len(vote.poll.options)
-        enumerated_weights: List[Tuple[int, Numeric]] = \
+        enumerated_weights: List[Tuple[int, int]] = \
             [(i, w) for i, w in enumerate(vote.weights[:options_count]) if w is not None]
         if len(enumerated_weights) == 0:
             self.weights = [None for _ in range(options_count)]
@@ -23,7 +21,7 @@ class Ranking:
             return
         prelims = sorted(enumerated_weights, key=lambda x: x[1], reverse=not collapse_ties)
         weights: List[Optional[float]] = [None for _ in range(options_count)]
-        cur: Optional[Numeric] = prelims[0][1]
+        cur: Optional[int] = prelims[0][1]
         score: float = 1
         if collapse_ties:
             for i, w in prelims:
