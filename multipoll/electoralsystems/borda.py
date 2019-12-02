@@ -3,14 +3,13 @@ from __future__ import annotations  # noqa
 from typing import List
 from typing import TYPE_CHECKING
 
-from multipoll.electoralsystems.ranking import Ranking
-from multipoll.electoralsystems.registry import electoral_system
+from multipoll.electoralsystems.utils import electoral_system
+from multipoll.electoralsystems.utils.ranking import Ranking
 
 if TYPE_CHECKING:
     import multipoll.models  # noqa: E402
 
 
-# noinspection PyPep8Naming
 class borda(electoral_system):  # noqa: N801
     key = "borda"
     label = "Borda Count"
