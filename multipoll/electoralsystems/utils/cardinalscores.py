@@ -17,11 +17,11 @@ def normalize_scores(scores: List[Optional[Union[float, int]]],
     if len(enumerated_weights) == 0:
         return [None for _ in scores]
     if isinstance(dim, InfinityType):
-        norm = max(w for _, w in enumerated_weights)
+        norm = max(abs(w) for _, w in enumerated_weights)
     elif dim == 0:
         norm = len([i for i, w in enumerated_weights if w != 0])
     else:
-        norm = sum(w ** dim for _, w in enumerated_weights) ** (1 / dim)
+        norm = sum(abs(w) ** dim for _, w in enumerated_weights) ** (1 / dim)
     norm = abs(norm)
     if norm == 0:
         enumerated_scores = [(i, 0.0) for i, _ in enumerated_weights]
