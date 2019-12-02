@@ -3,14 +3,16 @@
 <h2>{{ system|system_name }}</h2>
 
 <ul>
-    {% for formatted_option in {{poll|formatted_results:system}} %}
+    {% for formatted_option in poll|formatted_results:system %}
         <li>{{ formatted_option }}</li>
     {% endfor %}
 </ul>
 
+<!-- Commented out since most don't support it and it was a real eyesore
 <div class="iframe-container">
-    <iframe src="/polls/{{ poll.timestamp_str }}/results/visualize" allowfullscreen width="100%" height="100%"> </iframe>
+    <iframe src="/polls/{{ poll.timestamp_str }}/results/visualize?system={{ system }}" allowfullscreen width="100%" height="100%"> </iframe>
 </div>
+-->
 <form action="/polls/{{ poll.timestamp_str }}/" method="get" target="_self">
     <input type="submit" value="Go to Poll Overview">
 </form>

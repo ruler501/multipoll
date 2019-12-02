@@ -23,10 +23,10 @@ class AbstractScore(electoral_system, metaclass=abc.ABCMeta):
     def generate_scores(cls, votes: List[multipoll.models.FullVoteBase]) -> List[float]:
         if len(votes) == 0:
             return []
-        all_scores = [normalize_scores(v.weights[len(v.options)], 2) for v in votes]
-        scores = [cls.combine_scores(s[i] for s in all_scores if s[i] is not None)
+        all_scores = [normalize_scores(v.weights[:len(v.options)], 2) for v in votes]
+        scores = [cls.combine_scores((s[i] for s in all_scores if s[i] is not None))
                   for i in range(len(votes[0].options))]
-        return normalize_scores_with_fixed_max_ints(scores)
+        return normalize_scores_with_fixed_max_ints(scores, 100)
 
 
 class sumscore(AbstractScore):  # noqa: N801

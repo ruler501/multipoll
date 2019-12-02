@@ -111,10 +111,14 @@ class PollBase(TypedModel):
     def get_formatted_votes(self, system: Optional[str] = None) -> List[str]:
         return [f"({'' if s is None else s}) {o} "  # noqa: IF100
                 + f"({', '.join([f'{u.name}[{w}]' for u, w in votes if w is not None])})"
-                for o, votes, s in self.all_votes_with_option_and_score]
+                for o, votes, s in self.get_all_votes_with_option_and_score(system)]
 
     def visualized_results(self, system: Optional[str] = None) -> Optional[Union[bytes, str]]:
         return self.visualize_options(self.question, self.options, self.all_votes, system)
+
+    def get_all_votes_with_option_and_score(self, system: Optional[str] = None) \
+            -> List[Tuple[str, List[Vote], float]]:
+        return self.order_options(self.options, self.all_votes, system)
 
     @property
     def formatted_votes(self) -> List[str]:
@@ -135,7 +139,7 @@ class PollBase(TypedModel):
 
     @property
     def all_votes_with_option_and_score(self) -> List[Tuple[str, List[Vote], float]]:
-        return self.order_options(self.options, self.all_votes)
+        return self.get_all_votes_with_options_and_score()
 
     @property
     def partial_votes(self) -> Dict[User, FullVote]:
