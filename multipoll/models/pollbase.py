@@ -139,10 +139,8 @@ class PollBase(TypedModel):
 
     @property
     def partial_votes(self) -> Dict[User, FullVote]:
-        # noinspection PyPep8Naming
         FullVoteType = getattr(self, "FullVoteType")  # noqa: N806
         votes: Dict[User, FullVote] = defaultdict(FullVoteType)
-        # noinspection PyPep8Naming
         PartialVoteType = getattr(self, "PartialVoteType")  # noqa: N806
         partial_vote_set = PartialVoteType.name.lower() + "_set"
         for vote in getattr(self, partial_vote_set).all():
@@ -154,7 +152,6 @@ class PollBase(TypedModel):
 
     @property
     def full_votes(self) -> Dict[User, FullVote]:
-        # noinspection PyPep8Naming
         FullVoteType = getattr(self, "FullVoteType")  # noqa: N806
         votes: Dict[User, FullVote] = defaultdict(FullVoteType)
         full_vote_set = FullVoteType.name.lower() + "_set"
@@ -241,7 +238,6 @@ class FullVoteBase(models.Model, metaclass=FullVoteMeta):
                                                             null=False)
 
     def save(self, *args: Any, **kwargs: Any) -> None:
-        # noinspection PyUnresolvedReferences
         super(FullVoteBase, self).save(*args, **kwargs)
         self.poll.update_poll()
 

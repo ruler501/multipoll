@@ -58,7 +58,6 @@ def unique_list(seq: Iterable[T], key_function: Optional[Callable[[T], Any]] = N
 
 
 class ClassProperty(Generic[TContra, UCov]):
-    # noinspection SpellCheckingInspection
     def __init__(self, fget: Callable[[Type[TContra]], UCov]):
         self.fget = fget
 
