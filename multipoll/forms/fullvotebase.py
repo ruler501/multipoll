@@ -8,10 +8,10 @@ from typing import cast
 from django import forms
 from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import SuspiciousOperation
+from django.utils.decorators import classproperty
 
 from multipoll.models.pollbase import FullVoteBase, PollBase
 from multipoll.models.user import User
-from multipoll.utils import classproperty
 
 logger = logging.getLogger(__name__)
 
