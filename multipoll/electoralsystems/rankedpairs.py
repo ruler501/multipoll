@@ -71,7 +71,7 @@ class Tree(Generic[_TCov]):
 
 
 class ranked_pairs(electoral_system):  # noqa: N801
-    key = "rankedpairs"
+    key = "ranked_pairs"
     label = "Ranked Pairs"
 
     @classmethod

@@ -8,10 +8,10 @@ from typing import cast
 from django import forms
 from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import SuspiciousOperation
+from django.utils.decorators import classproperty
 
 from multipoll.models.pollbase import FullVoteBase, PollBase
 from multipoll.models.user import User
-from multipoll.utils import ClassProperty
 
 logger = logging.getLogger(__name__)
 
@@ -111,10 +111,10 @@ class FullVoteFormBase(forms.ModelForm):
         self.vote_model.find_and_validate_if_exists(self.instance.poll, self.instance.user,
                                                     self.instance.user_secret)
 
-    @ClassProperty
+    @classproperty
     def vote_model(cls) -> Type[FullVoteBase]:  # noqa: N805
         return getattr(getattr(cls, "Meta"), "model")
 
-    @ClassProperty
+    @classproperty
     def poll_model(cls) -> Type[PollBase]:  # noqa: N805
         return getattr(getattr(cls, "vote_model"), "poll_model")

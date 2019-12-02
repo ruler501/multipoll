@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Any, Callable, Generic, Iterable, List, Optional, Set, Type, TypeVar
+from typing import Any, Callable, Iterable, List, Optional, Set, TypeVar
 
 T = TypeVar('T')
 TContra = TypeVar('TContra', contravariant=True)
@@ -55,11 +55,3 @@ def unique_iter(seq: Iterable[T], key_function: Optional[Callable[[T], Any]] = N
 def unique_list(seq: Iterable[T], key_function: Optional[Callable[[T], Any]] = None) \
         -> List[T]:
     return list(unique_iter(seq, key_function))
-
-
-class ClassProperty(Generic[TContra, UCov]):
-    def __init__(self, fget: Callable[[Type[TContra]], UCov]):
-        self.fget = fget
-
-    def __get__(self, owner_self: Optional[TContra], owner_cls: Type[TContra]) -> UCov:
-        return self.fget(owner_cls)
