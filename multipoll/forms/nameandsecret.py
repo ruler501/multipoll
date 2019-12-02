@@ -5,7 +5,6 @@ from django import forms
 
 from wn import ADJ, NOUN
 from wn import WordNet
-# noinspection PyProtectedMember
 from wn.constants import wordnet_30_dir
 
 

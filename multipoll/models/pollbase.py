@@ -28,8 +28,8 @@ from multipoll.utils import absolute_url_without_request
 if TYPE_CHECKING:
     import multipoll.electoralsystems
 
-Numeric = TypeVar('Numeric')
-Vote = Tuple[User, Optional[Numeric]]
+
+Vote = Tuple[User, Optional[int]]
 Poll = TypeVar('Poll', bound='PollBase')
 FullVote = TypeVar('FullVote', bound='FullVoteBase')
 PartialVote = TypeVar('PartialVote', bound='PartialVoteBase')
@@ -196,7 +196,7 @@ class PollBase(TypedModel):
         return get_object_or_404(cls, timestamp=timestamp)
 
 
-def default_options_inner() -> List[Optional[Numeric]]:
+def default_options_inner() -> List[Optional[int]]:
     return [None for _ in range(PollBase.MAX_OPTIONS)]
 
 
@@ -249,7 +249,7 @@ class FullVoteBase(models.Model, metaclass=FullVoteMeta):
         ...
 
     @property
-    def options(self) -> List[Tuple[str, Optional[Numeric]]]:
+    def options(self) -> List[Tuple[str, Optional[int]]]:
         poll: PollBase = self.poll
         return list(zip(poll.options, self.weights))
 

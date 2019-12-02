@@ -35,18 +35,19 @@ class Majority:
                          and (self.votes_against > other.votes_against
                               or (self.votes_against == other.votes_against
                                   and (self.wins < other.wins
-                                       or (self.wins == other.wins)
+                                       or (self.wins == other.wins
                                            and (self.option > other.option
-                                               or (self.option == other.option
-                                                   and self.opposing_option > other.opposing_option))))))))
+                                                or (self.option == other.option
+                                                    and self.opposing_option
+                                                    > other.opposing_option)))))))))
 
     @property
     def margin(self) -> int:
         return self.votes_for - self.votes_against
 
     @classmethod
-    def create(cls, votes_for: int, votes_against: int, wins_for: int, wins_against: int, option: int,
-               opposing_option: int) -> Optional[Majority]:
+    def create(cls, votes_for: int, votes_against: int, wins_for: int, wins_against: int,
+               option: int, opposing_option: int) -> Optional[Majority]:
         if votes_for > votes_against:
             return Majority(votes_for, votes_against, wins_for, option, opposing_option)
         elif votes_against > votes_for:
@@ -93,7 +94,7 @@ class Tree(Generic[_TCov]):
             tree_xu.children.append(new_tree)
             for w in tree_jv:
                 if reachability[x][w] is None:
-                    Tree[int].meld(reachability, x, j, v, w)
+                    Tree.meld(reachability, x, j, v, w)
         else:
             logger.warn(f"{x} -> {u} [{tree_xu}] or {j} -> {v} [{tree_jv}] was None")
 
@@ -110,14 +111,14 @@ class Tree(Generic[_TCov]):
             reachability[i][i] = Tree[int](i)
         for i, majority in enumerate(majorities):
             if reachability[majority.opposing_option][majority.option] is None:
-                added_edges.append((i + 1, majority)) 
+                added_edges.append((i + 1, majority))
                 for x in range(options_count):
                     if reachability[x][majority.option] is not None \
                             and reachability[x][majority.opposing_option] is None:
                         Tree.meld(reachability, x, majority.opposing_option,
                                   majority.option, majority.opposing_option)
             else:
-                skipped_edges.append((i + 1, majority)) 
+                skipped_edges.append((i + 1, majority))
         return reachability, added_edges, skipped_edges
 
 
@@ -128,7 +129,7 @@ class ranked_pairs(electoral_system):  # noqa: N801
 
     @classmethod
     def calculate_reachability_and_edges(cls, votes: List[multipoll.models.FullVoteBase]) \
-            -> Tuple[List[List[Optional[Tree[int]]]],
+            -> Tuple[List[List[Optional[Tree]]],
                      List[Tuple[int, Majority]],
                      List[Tuple[int, Majority]]]:
         if len(votes) == 0:
@@ -177,12 +178,13 @@ class ranked_pairs(electoral_system):  # noqa: N801
         for i, used, majority in all_edges:
             source = majority.option
             dest = majority.opposing_option
-            margin_str = f"{majority.votes_for} vs. {majority.votes_against} Borda {majority.wins}" 
+            margin_str = f"{majority.votes_for} vs. {majority.votes_against} Borda {majority.wins}"
             result[-1] = result[-1].replace('#ff0000', '#000000').replace('#ffaaaa', '#aaaaaa')
             if used:
-                result.append(f'    n{source} -> n{dest} [label="({i}) {margin_str}" color="#ff0000"]')
+                result.append(f'    n{source} -> n{dest} [label="({i}) {margin_str}" '
+                              + f'color="#ff0000"]')
             else:
-                result.append(f'    n{source} -> n{dest} [label="({i}) {margin_str}", constraint=false, '
-                              + 'style=dashed, color="#ffaaaa"]')
+                result.append(f'    n{source} -> n{dest} [label="({i}) {margin_str}", '
+                              + f'constraint=false, style=dashed, color="#ffaaaa"]')
             graphs.append('\n'.join(result + ['}']))
         return render_to_string('visualize_rankedpairs.html', {'graphs': graphs})
