@@ -3,7 +3,7 @@
 <h2>{{ system|system_name }}</h2>
 
 <ul>
-    {% for formatted_option in poll.formatted_votes %}
+    {% for formatted_option in {{poll|formatted_results:system}} %}
         <li>{{ formatted_option }}</li>
     {% endfor %}
 </ul>
