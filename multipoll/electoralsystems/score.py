@@ -2,7 +2,7 @@ from __future__ import annotations  # noqa
 
 import abc
 import statistics
-from typing import Iterable, List, Union
+from typing import List, Union
 from typing import TYPE_CHECKING
 
 from django.utils.decorators import classproperty
@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 class AbstractScore(ElectoralSystem, metaclass=abc.ABCMeta):
     @classmethod
     @abc.abstractmethod
-    def combine_scores(cls, scores: Iterable[float]) -> float:
+    def combine_scores(cls, scores: List[float]) -> float:
         ...
 
     @classproperty
@@ -95,3 +95,30 @@ class mean_score_infinity(mean_score):  # noqa: N801
     @classproperty
     def dim(cls) -> Union[int, InfinityType]:  # noqa: N805
         return INFINITY
+
+
+class sum_score_manhattan(sum_score):  # noqa: N801
+    key = "sum_score_manhattan"
+    label = "Sum of Scores with L-1(Manhattan) Norm"
+
+    @classproperty
+    def dim(cls) -> Union[int, InfinityType]:  # noqa: N805
+        return 1
+
+
+class median_score_manhattan(median_score):  # noqa: N801
+    key = "median_score_manahattan"
+    label = "Median of Scores with L-1(Manhattan) Norm"
+
+    @classproperty
+    def dim(cls) -> Union[int, InfinityType]:  # noqa: N805
+        return 1
+
+
+class mean_score_manhattan(mean_score):  # noqa: N801
+    key = "mean_score_manhattan"
+    label = "Average(Mean) of Scores with L-1(Manhattan) Norm"
+
+    @classproperty
+    def dim(cls) -> Union[int, InfinityType]:  # noqa: N805
+        return 1

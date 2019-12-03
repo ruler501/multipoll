@@ -16,7 +16,8 @@ class MultiPoll(PollBase):
     supported_systems: ClassVar[Tuple[str, ...]] = ("approval", "borda", "ranked_pairs",
                                                     "sum_score", "median_score", "mean_score",
                                                     "mean_score_infinity", "median_score_infinity",
-                                                    "sum_score_infinity")
+                                                    "sum_score_infinity", "median_score_manhattan",
+                                                    "sum_score_manhattan", "mean_score_manhattan")
     default_system: ClassVar[str] = "mean_score_infinity"
 
     def create_attachment_for_option(self, ind: int) -> Dict[str, str]:
