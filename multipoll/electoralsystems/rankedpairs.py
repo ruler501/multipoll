@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 
 from django.template.loader import render_to_string
 
-from multipoll.electoralsystems.utils import electoral_system
+from multipoll.electoralsystems.utils import ElectoralSystem
 from multipoll.electoralsystems.utils.ranking import Majority, Ranking
 
 if TYPE_CHECKING:
@@ -70,7 +70,7 @@ class Tree(Generic[_TCov]):
         return reachability, added_edges, skipped_edges
 
 
-class ranked_pairs(electoral_system):  # noqa: N801
+class ranked_pairs(ElectoralSystem):  # noqa: N801
     key = "ranked_pairs"
     label = "Ranked Pairs"
 

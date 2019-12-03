@@ -26,7 +26,7 @@ def normalize_scores(scores: List[Optional[Union[float, int]]],
     if norm == 0:
         enumerated_scores = [(i, 0.0) for i, _ in enumerated_weights]
     else:
-        enumerated_scores = [(i, len(scores) * w / norm) for i, w in enumerated_weights]
+        enumerated_scores = [(i, w / norm) for i, w in enumerated_weights]
     scores = [None for _ in scores]
     for i, w in enumerated_scores:
         scores[i] = w

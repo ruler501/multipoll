@@ -23,9 +23,14 @@ _wordnet = WordNet(wordnet_30_dir)
 _words: Dict[int, Tuple[List[str], List[str]]] = {}
 
 
+def get_fixed_secret() -> str:
+    return "secret"
+
+
 class NameAndSecretForm(forms.Form):
     user_name = forms.CharField(label="Your Name:", min_length=2, max_length=30, required=True)
     user_secret = forms.CharField(label="Secret (Default is randomly generated, can be blank. Used "
                                         + "to verify when changing responses; not securely "
                                         + "stored):",
-                                  max_length=11, required=False, initial=get_default_secret)
+                                  max_length=11, required=False, initial=get_fixed_secret,
+                                  widget=forms.HiddenInput())
