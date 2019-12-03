@@ -7,6 +7,7 @@ from django import forms
 from django.db import models
 
 from multipoll.models.pollbase import FullVoteBase, PartialVoteBase, PollBase
+from multipoll.utils import FALSEY_VALUES
 
 
 class ApprovalPoll(PollBase):
@@ -19,7 +20,7 @@ class ApprovalPoll(PollBase):
 
     def get_formatted_votes(self, system: Optional[str] = None) -> List[str]:
         return [f"({'' if s is None else s}) {o} "  # noqa: IF100
-                + f"({', '.join([u.name for u, w in votes if w])})"
+                + f"({', '.join([u.name for u, w in votes if w and w not in FALSEY_VALUES])})"
                 for o, votes, s in self.all_votes_with_option_and_score]
 
     def create_attachment_for_option(self, ind: int) -> Dict[str, str]:

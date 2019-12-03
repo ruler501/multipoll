@@ -148,7 +148,7 @@ class PollBase(TypedModel):
         PartialVoteType = getattr(self, "PartialVoteType")  # noqa: N806
         partial_vote_set = PartialVoteType.name.lower() + "_set"
         for vote in getattr(self, partial_vote_set).all():
-            if vote.weight is not None and vote.weight not in (False, "off", "False", "false", "f"):
+            if vote.weight is not None:
                 votes[vote.user].weights[vote.option] = vote.weight
                 votes[vote.user].user = vote.user
                 votes[vote.user].poll = self

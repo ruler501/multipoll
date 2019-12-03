@@ -9,10 +9,10 @@ if TYPE_CHECKING:
 
 
 class ElectoralSystemMeta(abc.ABCMeta):
-    registered_systems: Dict[str, Type[electoral_system]] = {}
+    registered_systems: Dict[str, Type[ElectoralSystem]] = {}
 
     def __new__(mcs, name: str, bases: Tuple[Type, ...],  # noqa: N804
-                attrs: Dict[str, Any]) -> Type[electoral_system]:
+                attrs: Dict[str, Any]) -> Type[ElectoralSystem]:
         parents = [b for b in bases if b is abc.ABC]
         new_type = super().__new__(mcs, name, bases, attrs)
         if not parents:
@@ -28,7 +28,7 @@ class ElectoralSystemMeta(abc.ABCMeta):
         return new_type
 
 
-class electoral_system(abc.ABC, metaclass=ElectoralSystemMeta):  # noqa: N801
+class ElectoralSystem(abc.ABC, metaclass=ElectoralSystemMeta):  # noqa: N801
     @classmethod
     def order_options(cls, options: List[str],
                       votes: List[multipoll.models.FullVoteBase]) \
@@ -54,5 +54,5 @@ class electoral_system(abc.ABC, metaclass=ElectoralSystemMeta):  # noqa: N801
         return None
 
 
-def get_electoral_system(key: str) -> Type[electoral_system]:
+def get_electoral_system(key: str) -> Type[ElectoralSystem]:
     return ElectoralSystemMeta.registered_systems[key]

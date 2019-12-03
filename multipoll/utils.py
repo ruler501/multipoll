@@ -12,6 +12,8 @@ client_id = "4676884434.375651972439"
 client_secret = os.environ.get("MPOLLS_CLIENT_SECRET", "")
 bot_secret = os.environ.get("MPOLLS_BOT_SECRET", "")
 
+FALSEY_VALUES = ('off', 'False', 'false', 'f')
+
 
 def absolute_url_without_request(location: str) -> str:
     current_site = os.environ.get("MPOLLS_HOST", "localhost:8000")
