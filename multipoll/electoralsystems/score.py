@@ -35,7 +35,6 @@ class AbstractScore(ElectoralSystem, metaclass=abc.ABCMeta):
         scores = [cls.combine_scores([s[i] for s in all_scores if s[i] is not None])
                   for i in range(len(votes[0].options))]
         return [None if s is None else int(100*s) for s in scores]  # noqa: IF100
-        return normalize_scores_with_fixed_max_ints(scores, 100)
 
 
 class sum_score(AbstractScore):  # noqa: N801
