@@ -10,8 +10,7 @@ from django.utils.decorators import classproperty
 from multipoll.electoralsystems.utils import ElectoralSystem
 from multipoll.electoralsystems.utils.cardinalscores import INFINITY
 from multipoll.electoralsystems.utils.cardinalscores import InfinityType
-from multipoll.electoralsystems.utils.cardinalscores import normalize_scores, \
-    normalize_scores_with_fixed_max_ints
+from multipoll.electoralsystems.utils.cardinalscores import normalize_scores
 
 if TYPE_CHECKING:
     import multipoll.models  # noqa: E402
@@ -34,7 +33,7 @@ class AbstractScore(ElectoralSystem, metaclass=abc.ABCMeta):
         all_scores = [normalize_scores(v.weights[:len(v.options)], cls.dim) for v in votes]
         scores = [cls.combine_scores([s[i] for s in all_scores if s[i] is not None])
                   for i in range(len(votes[0].options))]
-        return [None if s is None else int(100*s) for s in scores]  # noqa: IF100
+        return [None if s is None else int(100 * s) for s in scores]  # noqa: IF100
 
 
 class sum_score(AbstractScore):  # noqa: N801
