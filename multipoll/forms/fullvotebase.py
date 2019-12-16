@@ -56,9 +56,8 @@ class FullVoteFormBase(forms.ModelForm):
                                                                      data["user_secret"])
             if not self.instance or not self.instance.poll:
                 raise SuspiciousOperation("Must define poll")
-            options = self.instance.poll.options
-            weights: List[Optional[int]] = [None for _ in options]
-            for i in range(len(options)):
+            weights: List[Optional[int]] = [None for _ in poll.options]
+            for i in range(len(weights)):
                 if f'option-{i}' in data:
                     weights[i] = int(data[f'option-{i}'])
         else:
@@ -67,6 +66,9 @@ class FullVoteFormBase(forms.ModelForm):
                 if vote.user == self.instance.user:
                     weights = vote.weights
                     break
+            else:
+                weights = [None for _ in self.instance.poll.options]
+        options = self.instance.poll.options
         logger.info("Found properties")
         array_field: ArrayField = self.vote_model._meta.get_field('weights')
         weight_field = array_field.base_field
