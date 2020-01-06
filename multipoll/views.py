@@ -292,6 +292,7 @@ def poll_results(request: HttpRequest, poll_timestamp: str, *,
                  system: Optional[str] = None) -> HttpResponse:
     if request.method == "GET":
         poll = PollBase.timestamped(poll_timestamp)
+        system = system or poll.default_system
         return render(request, "poll_results.html",
                       {'poll': poll, 'system': system})
     else:
@@ -303,6 +304,7 @@ def poll_results_visualization(request: HttpRequest, poll_timestamp: str, *,
                                system: Optional[str] = None) -> HttpResponse:
     if request.method == "GET":
         poll = PollBase.timestamped(poll_timestamp)
+        system = system or poll.default_system
         visualization = poll.visualized_results(system)
         if visualization is None:
             return HttpResponseNotFound()
