@@ -146,7 +146,7 @@ class PollBase(TypedModel):
 
     @property
     def all_votes_with_option_and_score(self) -> List[Tuple[str, List[Vote], float]]:
-        return self.get_all_votes_with_options_and_score()
+        return self.get_all_votes_with_option_and_score()
 
     @property
     def partial_votes(self) -> Dict[User, FullVote]:

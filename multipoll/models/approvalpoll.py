@@ -21,7 +21,7 @@ class ApprovalPoll(PollBase):
     def get_formatted_votes(self, system: Optional[str] = None) -> List[str]:
         return [f"({'' if s is None else s}) {o} "  # noqa: IF100
                 + f"({', '.join([u.name for u, w in votes if w and w not in FALSEY_VALUES])})"
-                for o, votes, s in self.all_votes_with_option_and_score]
+                for o, votes, s in self.get_all_votes_with_option_and_score(system)]
 
     def create_attachment_for_option(self, ind: int) -> Dict[str, str]:
         attach = {"name": "bool_option", "text": self.options[ind], "type": "button",
