@@ -196,8 +196,10 @@ def view_vote_on_poll_form(request: HttpRequest, poll_timestamp: str) -> HttpRes
         user_name = submitted_form.cleaned_data['user_name']
         user_secret = submitted_form.cleaned_data['user_secret']
         user = User.find_or_create(user_name)
-        vote = poll.FullVoteType.find_and_validate_or_create_verified(poll, user,
-                                                                      user_secret)
+        vote = poll.all_votes.get(user, None)
+        if vote is None:
+            vote = poll.FullVoteType.find_and_validate_or_create_verified(poll, user,
+                                                                          user_secret)
         form = vote.get_form()
         return render(request, "vote_on_poll.html",
                       {'form': form, 'path': request.get_full_path(force_append_slash=True)})
