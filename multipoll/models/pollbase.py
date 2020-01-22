@@ -134,7 +134,14 @@ class PollBase(TypedModel):
     @property
     def all_votes(self) -> Dict[User, FullVote]:
         votes = self.full_votes
-        votes.update(self.partial_votes)
+        partial_votes = self.partial_votes
+        for user, vote in partial_votes.items():
+            if user in votes:
+                for i, weight in enumerate(vote.weights):
+                    if weight is not None:
+                        votes[user].weights[i] = weight
+            else:
+                votes[user] = vote
         return votes
 
     @property

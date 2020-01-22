@@ -237,7 +237,7 @@ def submit_vote_on_poll(request: HttpRequest, poll_timestamp: str) -> HttpRespon
             poll = submitted_form.cleaned_data['poll']
             submitted_form.save()
             logger.info("vote_on_poll: submitted_form saved")
-            return redirect(poll.get_absolute_url() + "/results")
+            return redirect(poll.get_absolute_url() + "results")
         else:
             raise SuspiciousOperation("Poll timestamp did not match what was submitted"
                                       + "in the form.")
