@@ -35,7 +35,6 @@ ALLOWED_HOSTS = os.environ.get("MPOLLS_HOST", "localhost;127.0.0.1").split(';')
 INSTALLED_APPS = (
     'multipoll',
     'django_extensions',
-    'elasticapm.contrib.django'
 )
 
 MIDDLEWARE = ()
@@ -71,22 +70,7 @@ USE_I18N = True
 USE_L10N = True
 
 USE_TZ = True
-if os.environ.get("MPOLLS_ELASTIC_APM", None):
-    # To send performance metrics, add our tracing middleware:
-    MIDDLEWARE = MIDDLEWARE + (
-        'elasticapm.contrib.django.middleware.TracingMiddleware',
-        'elasticapm.contrib.django.middleware.Catch404Middleware'
-    )
-    ELASTIC_APM = {
-        # Set required service name. Allowed characters:
-        # a-z, A-Z, 0-9, -, _, and space
-        'SERVICE_NAME': 'multipoll',
-        # Set custom APM Server URL (default: http://localhost:8200)
-        'SERVER_URL': 'http://localhost:8200',
-        'DJANGO_TRANSACTION_NAME_FROM_ROUTE': True
-    }
-
-MIDDLEWARE = MIDDLEWARE + (
+MIDDLEWARE = (
     'django.middleware.common.CommonMiddleware',
 )
 

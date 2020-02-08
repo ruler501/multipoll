@@ -1,0 +1,29 @@
+version: '3'
+
+services:
+  multipoll-postgres:
+    image: postgres
+    volumes:
+      - postgres_data:/var/lib/postresql/data/
+  multipoll:
+    build: ..
+    image: localhost:32000/multipoll
+    command: bash -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8020"
+    ports:
+      - "8020:8020"
+    depends_on:
+      - multipoll-postgres
+    environment:
+      - POLLS_DATABASE=postgres
+      - POLLS_DATABASE_URL=multipoll-postgres
+      - POLLS_DATABASE_NAME=postgres
+      - POLLS_DATABASE_USERNAME=postgres
+      - POLLS_DATABASE_PORT=5432
+      - POLLS_DEFAULT_CHANNEL
+      - POLLS_HOST
+      - POLLS_SECRET_KEY
+      - POLLS_SLACK_VERIFIER
+      - POLLS_BOT_SECRET
+      - POLLS_CLIENT_SECRET
+volumes:
+  postgres_data:
