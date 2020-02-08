@@ -1,0 +1,98 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    kompose.cmd: kompose convert
+    kompose.version: 1.19.0 (f63a961c)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: multipoll
+  name: multipoll
+spec:
+  ports:
+  - name: "8020"
+    port: 8020
+    targetPort: 8020
+  selector:
+    io.kompose.service: multipoll
+status:
+  loadBalancer: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert
+    kompose.version: 1.19.0 (f63a961c)
+  creationTimestamp: null
+  labels:
+    io.kompose.service: multipoll
+  name: multipoll
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      io.kompose.service: multipoll
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert
+        kompose.version: 1.19.0 (f63a961c)
+      creationTimestamp: null
+      labels:
+        io.kompose.service: multipoll
+    spec:
+      containers:
+        - name: multipoll
+          image: localhost:32000/multipoll:latest
+          ports:
+          - containerPort: 8020
+          env:
+            - name: MPOLLS_DATABASE
+              value: postgres
+            - name: MPOLLS_DATABASE_NAME
+              value: postgres
+            - name: MPOLLS_DATABASE_PORT
+              value: "5432"
+            - name: MPOLLS_DATABASE_URL
+              value: multipoll-postgres
+            - name: MPOLLS_DATABASE_USERNAME
+              value: postgres
+            - name: MPOLLS_SLACK_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: multipoll-secrets
+                  key: MPOLLS_SLACK_SECRET
+            - name: MPOLLS_SLACK_BOT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: multipoll-secrets
+                  key: MPOLLS_SLACK_BOT_SECRET
+            - name: MPOLLS_DEFAULT_CHANNEL
+              valueFrom:
+                secretKeyRef:
+                  name: multipoll-secrets
+                  key: MPOLLS_DEFAULT_CHANNEL 
+            - name: MPOLLS_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: multipoll-secrets
+                  key: MPOLLS_HOST
+            - name: MPOLLS_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: multipoll-secrets
+                  key: MPOLLS_SECRET_KEY
+            - name: MPOLLS_SLACK_VERIFIER
+              valueFrom:
+                secretKeyRef:
+                  name: multipoll-secrets
+                  key: MPOLLS_SLACK_VERIFIER
+          command: [/bin/sh, -c]
+          args:
+            - python manage.py migrate && python manage.py
+              runserver 0.0.0.0:8020
+      restartPolicy: Always
+status: {}

@@ -23,6 +23,7 @@ def _get_token(use_client_secret: bool = True) -> str:
     if secret:
         return secret
     else:
+        logging.error(f"No secret is available with use_client_secret: {use_client_secret}")
         raise PermissionDenied()
 
 
