@@ -25,7 +25,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = os.environ.get("MPOLLS_SECRET_KEY", "")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = os.environ.get("MPOLLS_DEBUG", "1") == "1"
 DEBUG_PROPAGATE_EXCEPTIONS = DEBUG
 
 ALLOWED_HOSTS = os.environ.get("MPOLLS_HOST", "localhost;127.0.0.1").split(';')
@@ -55,7 +55,21 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'multipoll.wsgi.application'
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
+        },
+    },
+}
 
 
 # Internationalization
@@ -70,6 +84,7 @@ USE_I18N = True
 USE_L10N = True
 
 USE_TZ = True
+
 MIDDLEWARE = (
     'django.middleware.common.CommonMiddleware',
 )

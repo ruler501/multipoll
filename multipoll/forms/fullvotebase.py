@@ -58,8 +58,11 @@ class FullVoteFormBase(forms.ModelForm):
                 raise SuspiciousOperation("Must define poll")
             weights: List[Optional[int]] = [None for _ in poll.options]
             for i in range(len(weights)):
-                if f'option-{i}' in data:
-                    weights[i] = int(data[f'option-{i}'])
+                if f'option-{i}' in data and data[f'option-{i}']:
+                    try:
+                        weights[i] = int(data[f'option-{i}'])
+                    except ValueError:
+                        logger.warn(f"Invalid formatted option-{i}: {data[f'option-{i}']}")
         else:
             vote_list = self.instance.poll.all_votes.values()
             for vote in vote_list:

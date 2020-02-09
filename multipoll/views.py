@@ -250,7 +250,7 @@ def submit_vote_on_poll(request: HttpRequest, poll_timestamp: str) -> HttpRespon
 
 
 def vote_on_poll(request: HttpRequest, poll_timestamp: str) -> HttpResponse:
-    logger.info(f"In view controller vote_on_poll(<Request>, '{poll_timestamp}')")
+    logger.info(f"In view controller vote_on_poll({request}, '{poll_timestamp}')")
     if request.method == "GET":
         return view_vote_on_poll_form(request, poll_timestamp)
     elif request.method == 'POST':
