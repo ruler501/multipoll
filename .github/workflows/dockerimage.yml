@@ -11,4 +11,4 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Build the Docker image
-      run: docker-compose build -f .docker/docker-compose.yml --tag multipoll:$(date +%s)
+      run: TAG=$(git rev-parse --short HEAD) docker-compose -f .docker/docker-compose.yml build
