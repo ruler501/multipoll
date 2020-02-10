@@ -12,3 +12,6 @@ jobs:
     - uses: actions/checkout@v2
     - name: Build the Docker image
       run: TAG=$(git rev-parse --short HEAD) docker-compose -f .docker/docker-compose.yml build
+    - name: Check Flake8 compliance
+      run: docker exec -t multipoll:$(git rev-parse --short HEAD) "sh -c 'pip install -r requirements.flake8.txt && MYPYPATH=\"\" flake8 --format=pylint .'"
+    - name: docker exec -t multipoll:$(git rev-parse --short HEAD) "python manage.py makemigrations --check"
