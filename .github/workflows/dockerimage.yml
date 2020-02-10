@@ -11,14 +11,14 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Print ref
-      run: echo ${GITHUB_REF//\//-}
+      run: echo `echo $GITHUB_REF | sed 's/^ref\/heads\///g' | sed 's/^ref\///' | sed 's/\//-/'`
     - name: Build the Docker image
-      run: TAG=${GITHUB_REF//\//-} REPOSITORY=pkg.github.com/ruler501/multipoll docker-compose -f .docker/docker-compose.yml build
+      run: TAG=`echo $GITHUB_REF | sed 's/^ref\/heads\///g' | sed 's/^ref\///' | sed 's/\//-/'` REPOSITORY=pkg.github.com/ruler501/multipoll docker-compose -f .docker/docker-compose.yml build
     - name: Check Flake8 compliance
-      run: TAG=${GITHUB_REF//\//-} REPOSITORY=pkg.github.com/ruler501/multipoll docker-compose -f .docker/docker-compose.yml run multipoll sh -c 'pip install -r requirements.flake8.txt && MYPYPATH="" flake8 --format=pylint .'
+      run: TAG=`echo $GITHUB_REF | sed 's/^ref\/heads\///g' | sed 's/^ref\///' | sed 's/\//-/'` REPOSITORY=pkg.github.com/ruler501/multipoll docker-compose -f .docker/docker-compose.yml run multipoll sh -c 'pip install -r requirements.flake8.txt && MYPYPATH="" flake8 --format=pylint .'
     - name: Ensure Migrations are Up to Date 
-      run: TAG=${GITHUB_REF//\//-} REPOSITORY=pkg.github.com/ruler501/multipoll docker-compose -f .docker/docker-compose.yml run multipoll sh -c 'MPOLLS_SECRET_KEY=example python manage.py makemigrations --check'
+      run: TAG=`echo $GITHUB_REF | sed 's/^ref\/heads\///g' | sed 's/^ref\///' | sed 's/\//-/'` REPOSITORY=pkg.github.com/ruler501/multipoll docker-compose -f .docker/docker-compose.yml run multipoll sh -c 'MPOLLS_SECRET_KEY=example python manage.py makemigrations --check'
     - name: Login to Docker
       run: docker login -u $GITHUB_ACTOR -p ${{ secrets.GITHUB_TOKEN }} 'pkg.github.com/ruler501/multipoll'
     - name: Push to github package registry
-      run: TAG=${GITHUB_REF//\//-} REPOSITORY=pkg.github.com/ruler501/multipoll docker-compose -f .docker/docker-compose.yml push
+      run: TAG=`echo $GITHUB_REF | sed 's/^ref\/heads\///g' | sed 's/^ref\///' | sed 's/\//-/'` REPOSITORY=pkg.github.com/ruler501/multipoll docker-compose -f .docker/docker-compose.yml push
