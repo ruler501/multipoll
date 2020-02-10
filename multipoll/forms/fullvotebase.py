@@ -2,7 +2,7 @@ from __future__ import annotations  # noqa: T499
 # noqa: T499, E800
 
 import logging
-from typing import Any, Generic, List, Optional, Type, TypeVar, Union
+from typing import Any, Dict, Generic, List, Optional, Type, TypeVar, Union
 from typing import cast
 
 from django import forms
@@ -19,6 +19,17 @@ logger = logging.getLogger(__name__)
 Poll = TypeVar('Poll', bound=PollBase)
 FullVote = TypeVar('FullVote', bound=FullVoteBase, covariant=True)
 FullVoteForm = TypeVar("FullVoteForm", bound='FullVoteFormBase')
+
+
+def populate_weights(count: int, data: Dict[str, str]) -> List[Optional[int]]:
+    weights: List[Optional[int]] = [None for _ in range(count)]
+    for i in range(count):
+        if f'option-{i}' in data and data[f'option-{i}']:
+            try:
+                weights[i] = int(data[f'option-{i}'])
+            except ValueError:
+                logger.warn(f"Invalid formatted option-{i}: {data[f'option-{i}']}")
+    return weights
 
 
 class FullVoteFormBase(forms.ModelForm):
@@ -56,13 +67,8 @@ class FullVoteFormBase(forms.ModelForm):
                                                                      data["user_secret"])
             if not self.instance or not self.instance.poll:
                 raise SuspiciousOperation("Must define poll")
-            weights: List[Optional[int]] = [None for _ in poll.options]
-            for i in range(len(weights)):
-                if f'option-{i}' in data and data[f'option-{i}']:
-                    try:
-                        weights[i] = int(data[f'option-{i}'])
-                    except ValueError:
-                        logger.warn(f"Invalid formatted option-{i}: {data[f'option-{i}']}")
+
+            weights = populate_weights(len(poll.options), data)
         else:
             vote_list = self.instance.poll.all_votes.values()
             for vote in vote_list:
