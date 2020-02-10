@@ -13,8 +13,8 @@ jobs:
     - name: Build the Docker image
       run: TAG=$(git rev-parse --short HEAD) docker-compose -f .docker/docker-compose.yml build
     - name: Check Flake8 compliance
-      run: docker run -t multipoll:$(git rev-parse --short HEAD) "sh -c 'pip install -r requirements.flake8.txt && MYPYPATH=\"\" flake8 --format=pylint .'"
+      run: docker-compose run multipoll "sh -c 'pip install -r requirements.flake8.txt && MYPYPATH=\"\" flake8 --format=pylint .'"
     - name: Start db server
-      run: docker run multipoll-postgres
+      run: docker-compose run -d multipoll-postgres
     - name: Ensure Migrations are Up to Date 
-      run: docker run -t multipoll:$(git rev-parse --short HEAD) "python manage.py makemigrations --check"
+      run: docker-compose run multipoll "python manage.py makemigrations --check"
