@@ -7,7 +7,7 @@ services:
       - postgres_data:/var/lib/postresql/data/
   multipoll:
     build: ..
-    image: localhost:32000/multipoll:${TAG}
+    image: ${REPOSITORY}/multipoll:${TAG}
     command: bash -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8020"
     ports:
       - "8020:8020"
