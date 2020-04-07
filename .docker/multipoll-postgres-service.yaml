@@ -45,12 +45,15 @@ spec:
         io.kompose.service: multipoll-postgres
     spec:
       containers:
-      - image: postgres
-        name: multipoll-postgres
-        resources: {}
-        volumeMounts:
-        - mountPath: /var/lib/postresql/data/
-          name: multipoll-postgres-claim
+        - image: postgres
+          env:
+            - name: POSTGRES_HOST_AUTH_METHOD
+              value: trust
+          name: multipoll-postgres
+          resources: {}
+          volumeMounts:
+            - mountPath: /var/lib/postresql/data/
+              name: multipoll-postgres-claim
       restartPolicy: Always
       volumes:
       - name: multipoll-postgres-claim
