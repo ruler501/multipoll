@@ -11,14 +11,14 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Print ref
-      run: echo `echo $GITHUB_REF | sed 's/^refs\/heads\///g' | sed 's/^refs\///' | sed 's/\//-/g'`
+      run: echo `echo $GITHUB_REF | sed 's/^refs\/heads\///g' | sed 's/^refs\///' | sed 's/\//-/g'`-${{ GITHUB_RUN_ID }}
     - name: Build the Docker image
-      run: TAG=`echo $GITHUB_REF | sed 's/^refs\/heads\///g' | sed 's/^refs\///' | sed 's/\//-/g'` REPOSITORY=docker.pkg.github.com/ruler501/multipoll docker-compose -f .docker/docker-compose.yml build
+      run: TAG=`echo $GITHUB_REF | sed 's/^refs\/heads\///g' | sed 's/^refs\///' | sed 's/\//-/g'`-${{ GITHUB_RUN_ID }} REPOSITORY=docker.pkg.github.com/ruler501/multipoll docker-compose -f .docker/docker-compose.yml build
     - name: Check Flake8 compliance
-      run: TAG=`echo $GITHUB_REF | sed 's/^refs\/heads\///g' | sed 's/^refs\///' | sed 's/\//-/g'` REPOSITORY=docker.pkg.github.com/ruler501/multipoll docker-compose -f .docker/docker-compose.yml run multipoll sh -c 'pip install -r requirements.flake8.txt && MYPYPATH="" flake8 --format=pylint .'
+      run: TAG=`echo $GITHUB_REF | sed 's/^refs\/heads\///g' | sed 's/^refs\///' | sed 's/\//-/g'`-${{ GITHUB_RUN_ID }} REPOSITORY=docker.pkg.github.com/ruler501/multipoll docker-compose -f .docker/docker-compose.yml run multipoll sh -c 'pip install -r requirements.flake8.txt && MYPYPATH="" flake8 --format=pylint .'
     - name: Ensure Migrations are Up to Date 
-      run: TAG=`echo $GITHUB_REF | sed 's/^refs\/heads\///g' | sed 's/^refs\///' | sed 's/\//-/g'` REPOSITORY=docker.pkg.github.com/ruler501/multipoll docker-compose -f .docker/docker-compose.yml run multipoll sh -c 'MPOLLS_SECRET_KEY=example python manage.py makemigrations --check'
+      run: TAG=`echo $GITHUB_REF | sed 's/^refs\/heads\///g' | sed 's/^refs\///' | sed 's/\//-/g'`-${{ GITHUB_RUN_ID }} REPOSITORY=docker.pkg.github.com/ruler501/multipoll docker-compose -f .docker/docker-compose.yml run multipoll sh -c 'MPOLLS_SECRET_KEY=example python manage.py makemigrations --check'
     - name: Login to Docker
-      run: docker login -u $GITHUB_ACTOR -p ${{ secrets.GITHUB_TOKEN }} 'docker.pkg.github.com/ruler501/multipoll'
+      run: docker login -u $GITHUB_ACTOR -p ${{ secrets.GITHUB_TOKEN }} 'docker.pkg.github.com//multipoll'
     - name: Push to github package registry
-      run: TAG=`echo $GITHUB_REF | sed 's/^refs\/heads\///g' | sed 's/^refs\///' | sed 's/\//-/g'` REPOSITORY=docker.pkg.github.com/ruler501/multipoll docker-compose -f .docker/docker-compose.yml push
+      run: TAG=`echo $GITHUB_REF | sed 's/^refs\/heads\///g' | sed 's/^refs\///' | sed 's/\//-/g'`-${{ GITHUB_RUN_ID }} REPOSITORY=docker.pkg.github.com/ruler501/multipoll docker-compose -f .docker/docker-compose.yml push
